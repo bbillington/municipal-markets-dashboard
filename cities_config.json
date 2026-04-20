@@ -1,0 +1,17 @@
+{
+  "_comment": "Enable/disable cities for the dashboard. Set 'enabled' to false to exclude a city even if its data file exists. Add new cities by adding a new entry with the matching Excel filename slug.",
+  "cities": {
+    "dallas":       { "enabled": true,  "label": "Dallas" },
+    "fortworth":    { "enabled": true,  "label": "Fort Worth" },
+    "mckinney":     { "enabled": true,  "label": "McKinney" },
+    "frisco":       { "enabled": true,  "label": "Frisco" },
+    "carrollton":   { "enabled": true,  "label": "Carrollton" },
+    "celina":       { "enabled": true,  "label": "Celina" },
+    "plano":        { "enabled": true,  "label": "Plano" },
+    "garland":      { "enabled": true,  "label": "Garland" },
+    "richardson":   { "enabled": true,  "label": "Richardson" },
+    "lancaster":    { "enabled": true,  "label": "Lancaster" },
+    "grandprairie": { "enabled": true,  "label": "Grand Prairie" },
+    "prosper":      { "enabled": false, "label": "Prosper" }
+  }
+}
