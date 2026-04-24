@@ -19,6 +19,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <!-- City boundary GeoJSON data -->
 <script src="city_boundaries.js"></script>
+<!-- App version -->
+<script src="version.js?v=2.11"></script>
 <!-- PDF export libraries -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
@@ -104,7 +106,29 @@ body {
   white-space: nowrap;
   display: flex;
   gap: 14px;
+  align-items: center;
 }
+.nav-stats > span { display: inline-flex; align-items: center; }
+.nav-stats > span + span::before {
+  content: '';
+  display: inline-block;
+  width: 1px;
+  height: 12px;
+  background: rgba(255,255,255,.25);
+  margin-right: 14px;
+}
+
+/* Version badge — top-right of nav */
+.nav-version {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255,255,255,.5);
+  letter-spacing: .5px;
+  margin-left: 12px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.nav-version:hover { color: rgba(255,255,255,.85); }
 
 .nav-tabs {
   display: flex;
@@ -602,23 +626,24 @@ body {
 /* ======================================================================
    KPI CARDS
 ====================================================================== */
+/* B1 (Option 1): KPI row HIDDEN — totals now live inline in the nav-stats
+   bar at the top of the page. Keep the rule in case any logic still
+   queries the element. */
 #kpi-row {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  margin-bottom: 24px;
+  display: none;
 }
 
 .kpi-card {
   background: var(--white);
   border-radius: var(--radius);
-  padding: 10px 14px;
+  padding: 6px 12px;
   box-shadow: var(--shadow);
   border-left: 3px solid var(--blue);
   display: flex;
   align-items: center;
   gap: 10px;
   transition: box-shadow .2s;
+  min-height: 0;
 }
 .kpi-card:hover { box-shadow: var(--shadow-md); }
 .kpi-card:nth-child(1) { border-left-color: var(--blue); }
@@ -626,26 +651,26 @@ body {
 .kpi-card:nth-child(3) { border-left-color: var(--seafoam); }
 .kpi-card:nth-child(4) { border-left-color: var(--dark); }
 
-.kpi-icon { font-size: 20px; flex-shrink: 0; line-height: 1; }
-.kpi-body { min-width: 0; }
+.kpi-icon { font-size: 16px; flex-shrink: 0; line-height: 1; }
+.kpi-body { min-width: 0; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .kpi-value {
-  font-size: 22px;
+  font-size: 17px;
   font-weight: 700;
   color: var(--blue);
   line-height: 1.1;
   white-space: nowrap;
 }
 .kpi-label {
-  font-size: 10px;
+  font-size: 9px;
   color: var(--seafoam);
   text-transform: uppercase;
   letter-spacing: .5px;
-  margin-top: 2px;
+  margin-top: 0;
 }
 .kpi-compare {
-  font-size: 11px;
+  font-size: 9px;
   font-weight: 600;
-  margin-top: 4px;
+  margin-top: 0;
 }
 .kpi-compare.up { color: #155724; }
 .kpi-compare.down { color: #9B3426; }
@@ -1911,6 +1936,7 @@ body.custom-build-mode .map-card #map-expand-btn {
     <button class="nav-tab" data-tab="tab-pm">Consultant Intel</button>
     <button class="nav-tab" data-tab="tab-cip">Budgets &amp; Bonds</button>
     <button class="nav-tab" id="nav-tab-myview" data-tab="tab-myview" style="display:none;">My View</button>
+    <span class="nav-version" id="nav-version" title=""></span>
   </div>
 
   <!-- Custom View build controls (hidden by default; toggled in build mode) -->
@@ -4010,6 +4036,7 @@ function updateNavStats() {
   if (!navStats) return;
   const data = STATE.filteredData;
   const totalValue = sumBy(data, r => r.amount);
+  const consultantsCount = unique(data.map(r => r.company).filter(Boolean)).length;
   const halffContracts = data.filter(r => isHalff(r.company));
   let halffSpan = '';
   if (halffContracts.length > 0) {
@@ -4019,7 +4046,15 @@ function updateNavStats() {
     '<span>' + data.length.toLocaleString() + ' contracts</span>' +
     '<span>' + fmtMoney(totalValue) + ' total</span>' +
     '<span>' + unique(data.map(r => r.city)).length + ' cities</span>' +
+    '<span>' + consultantsCount.toLocaleString() + ' consultants</span>' +
     halffSpan;
+
+  // Version badge — top-right of nav
+  const verEl = document.getElementById('nav-version');
+  if (verEl && window.APP_VERSION) {
+    verEl.textContent = 'v' + window.APP_VERSION;
+    verEl.title = 'Build ' + (window.APP_BUILD || '');
+  }
 }
 
 function updateFooter() {
