@@ -796,14 +796,9 @@ body {
   color: var(--white);
 }
 
-/* B4: Top 5 Market Share Evolution — compact height */
-.chart-card.chart-half {
-  min-height: 240px;
-}
-.chart-card.chart-half .chart-wrap {
-  height: 200px;
-  max-height: 200px;
-}
+/* B4 was here as .chart-half (height-reduce) — replaced by removing
+   .chart-full from the Market Share card so it occupies a single grid
+   column and pairs with Cumulative Spend Curve on the same row. */
 
 /* Info tooltip — small ⓘ icon with hover-reveal explanation */
 .info-tip {
@@ -1462,9 +1457,15 @@ body.chart-expanded { overflow: hidden; }
 }
 
 /* ======================================================================
-   RESPONSIVE
+   RESPONSIVE — B5 spec breakpoints
+   - desktop  > 1440  : full 2-col layout, all features
+   - laptop   1024-1440: same 2-col layout (default rules apply)
+   - tablet    640-1024: 1-col stacks; nav-stats wraps; map de-stickys
+   - mobile     < 640 : nav stacks vertically; nav-stats stacks; chart cards full-width
 ====================================================================== */
-@media (max-width: 1100px) {
+
+/* Tablet + below — was 1100px, tightened to 1024 per spec */
+@media (max-width: 1024px) {
   #content-grid {
     grid-template-columns: 1fr;
   }
@@ -1475,12 +1476,31 @@ body.chart-expanded { overflow: hidden; }
   #kpi-row { grid-template-columns: repeat(2, 1fr); }
   #map-col { position: static; }
   .stat-grid { grid-template-columns: 1fr 1fr 1fr; }
+  /* Nav-stats wraps to a 2nd line if needed */
+  .nav-stats { flex-wrap: wrap; gap: 10px; font-size: 11px; }
+  .nav-stats > span + span::before { display: none; }
 }
 
-@media (max-width: 700px) {
-  #nav { flex-wrap: wrap; height: auto; padding: 10px 12px; gap: 6px; }
+/* Mobile — was 700px, tightened to 640 per spec */
+@media (max-width: 640px) {
+  #nav {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 8px 10px;
+    gap: 4px;
+  }
   .nav-tabs { order: 10; width: 100%; justify-content: center; }
   .nav-title { font-size: 13px; }
+  .nav-stats {
+    order: 5;
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-right: 0;
+    font-size: 11px;
+  }
+  .nav-stats > span + span::before { display: none; }
+  .nav-version { order: 11; }
   #kpi-row { grid-template-columns: 1fr 1fr; }
   #content-grid { grid-template-columns: 1fr; }
   #chart-col { grid-template-columns: 1fr; }
@@ -1488,6 +1508,9 @@ body.chart-expanded { overflow: hidden; }
   .filter-sep { display: none; }
   .stat-grid { grid-template-columns: 1fr 1fr; }
   #pm-grid { grid-template-columns: 1fr; }
+  /* Chart card padding tighter on phones */
+  .chart-card { padding: 10px; }
+  .chart-title { font-size: 13px; }
 }
 
 /* ======================================================================
@@ -1766,12 +1789,14 @@ body.custom-build-mode .map-card #map-expand-btn {
   box-shadow: 0 3px 8px rgba(0,43,60,.12);
   /* Sticky: hugs the bottom of the filter bar while scrolling through its section */
   position: sticky;
-  top: calc(var(--nav-h) + 58px);
+  top: var(--sticky-top, calc(var(--nav-h) + 58px));
   z-index: 50;
   overflow: hidden;
-  /* B6: land below nav (56) + filter bar (~58) + space for PRIOR sticky
-     section header (~60) so it can unstick cleanly without bleeding in */
-  scroll-margin-top: calc(var(--nav-h) + 130px);
+  /* B6: --scroll-target-offset is set by JS on load + resize (see
+     updateScrollTargetOffset()) to actual nav + filter-bar height +
+     header buffer. Falls back to a sensible static value if the JS
+     hasn't run yet. */
+  scroll-margin-top: var(--scroll-target-offset, calc(var(--nav-h) + 130px));
 }
 .chart-section-header::before {
   content: '';
@@ -2357,8 +2382,9 @@ body.custom-build-mode .map-card #map-expand-btn {
         <p>Top firms' share evolution and cumulative investment trajectory</p>
       </div>
 
-      <!-- Chart 11: Consultant Market Share Evolution (B4: half-height) -->
-      <div class="chart-card chart-full chart-half">
+      <!-- Chart 11: Consultant Market Share Evolution (B4: half-WIDTH so it
+           pairs on the same row with the Cumulative Spend Curve below) -->
+      <div class="chart-card">
         <div class="chart-header">
           <div>
             <div class="chart-title">Top 5 Market Share Evolution</div>
@@ -6394,7 +6420,48 @@ function switchToTab(tabId) {
 /* ======================================================================
    SECTION 10: DOMContentLoaded EVENT HANDLER
 ====================================================================== */
+/* B6: Dynamic scroll-target offset.
+   Measures the actual rendered height of #nav + #filter-bar (whichever
+   sticky things sit above the section headers) and writes the sum +
+   buffer to a CSS custom property so .chart-section-header's
+   scroll-margin-top tracks the real chrome height across breakpoints.
+   Without this, hard-coded offsets are wrong when nav/filter compress
+   on mobile or expand when nav-stats wraps to two lines on tablet. */
+function updateScrollTargetOffset() {
+  var nav = document.getElementById('nav');
+  var bar = document.getElementById('filter-bar');
+  var navH = nav ? nav.getBoundingClientRect().height : 56;
+  var barH = bar ? bar.getBoundingClientRect().height : 58;
+  var headerBuffer = 60; // space for the prior sticky section-header
+  var total = Math.round(navH + barH + headerBuffer);
+  document.documentElement.style.setProperty('--scroll-target-offset', total + 'px');
+  // Also expose the sticky top (nav + filter bar only — section header sticks here)
+  document.documentElement.style.setProperty('--sticky-top', Math.round(navH + barH) + 'px');
+}
+
+(function wireScrollTargetOffset() {
+  var t;
+  function debouncedUpdate() {
+    clearTimeout(t);
+    t = setTimeout(updateScrollTargetOffset, 120);
+  }
+  window.addEventListener('resize', debouncedUpdate);
+  // ResizeObserver catches non-resize causes (filter wrapping, content shifts)
+  if (typeof ResizeObserver !== 'undefined') {
+    var ro = new ResizeObserver(debouncedUpdate);
+    document.addEventListener('DOMContentLoaded', function() {
+      var nav = document.getElementById('nav');
+      var bar = document.getElementById('filter-bar');
+      if (nav) ro.observe(nav);
+      if (bar) ro.observe(bar);
+    });
+  }
+})();
+
 document.addEventListener('DOMContentLoaded', function() {
+
+  /* B6: prime the scroll-target offset on first paint */
+  updateScrollTargetOffset();
 
   /* --- Custom View builder wiring --- */
   var btnBuild = document.getElementById('btn-custom-build');
