@@ -612,12 +612,12 @@ body {
 .kpi-card {
   background: var(--white);
   border-radius: var(--radius);
-  padding: 18px 20px;
+  padding: 10px 14px;
   box-shadow: var(--shadow);
-  border-left: 4px solid var(--blue);
+  border-left: 3px solid var(--blue);
   display: flex;
-  align-items: flex-start;
-  gap: 14px;
+  align-items: center;
+  gap: 10px;
   transition: box-shadow .2s;
 }
 .kpi-card:hover { box-shadow: var(--shadow-md); }
@@ -626,21 +626,21 @@ body {
 .kpi-card:nth-child(3) { border-left-color: var(--seafoam); }
 .kpi-card:nth-child(4) { border-left-color: var(--dark); }
 
-.kpi-icon { font-size: 28px; flex-shrink: 0; line-height: 1; }
+.kpi-icon { font-size: 20px; flex-shrink: 0; line-height: 1; }
 .kpi-body { min-width: 0; }
 .kpi-value {
-  font-size: 36px;
+  font-size: 22px;
   font-weight: 700;
   color: var(--blue);
   line-height: 1.1;
   white-space: nowrap;
 }
 .kpi-label {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--seafoam);
   text-transform: uppercase;
-  letter-spacing: .6px;
-  margin-top: 4px;
+  letter-spacing: .5px;
+  margin-top: 2px;
 }
 .kpi-compare {
   font-size: 11px;
@@ -740,6 +740,44 @@ body {
   font-size: 11px;
   color: var(--seafoam);
   margin-top: 2px;
+}
+
+/* Chart granularity toggle buttons (Annual / Quarterly) */
+.chart-toggle-group {
+  display: inline-flex;
+  gap: 0;
+  border: 1px solid var(--cool-gray);
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+.chart-toggle-btn {
+  background: var(--white);
+  border: none;
+  color: var(--seafoam);
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: 'Public Sans', Arial, sans-serif;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+  white-space: nowrap;
+}
+.chart-toggle-btn + .chart-toggle-btn { border-left: 1px solid var(--cool-gray); }
+.chart-toggle-btn:hover { background: var(--bg); color: var(--blue); }
+.chart-toggle-btn.active {
+  background: var(--blue);
+  color: var(--white);
+}
+
+/* B4: Top 5 Market Share Evolution — compact height */
+.chart-card.chart-half {
+  min-height: 240px;
+}
+.chart-card.chart-half .chart-wrap {
+  height: 200px;
+  max-height: 200px;
 }
 
 /* Info tooltip — small ⓘ icon with hover-reveal explanation */
@@ -1706,7 +1744,9 @@ body.custom-build-mode .map-card #map-expand-btn {
   top: calc(var(--nav-h) + 58px);
   z-index: 50;
   overflow: hidden;
-  scroll-margin-top: calc(var(--nav-h) + 90px);
+  /* B6: land below nav (56) + filter bar (~58) + space for PRIOR sticky
+     section header (~60) so it can unstick cleanly without bleeding in */
+  scroll-margin-top: calc(var(--nav-h) + 130px);
 }
 .chart-section-header::before {
   content: '';
@@ -2147,7 +2187,11 @@ body.custom-build-mode .map-card #map-expand-btn {
         <div class="chart-header">
           <div>
             <div class="chart-title">Contract Value Over Time</div>
-            <div class="chart-subtitle">Quarterly investment trend &middot; top 5 categories</div>
+            <div class="chart-subtitle">Investment trend &middot; top 5 categories</div>
+          </div>
+          <div class="chart-toggle-group" role="group" aria-label="Granularity">
+            <button type="button" class="chart-toggle-btn overtime-granularity-btn active" data-granularity="year">Annual</button>
+            <button type="button" class="chart-toggle-btn overtime-granularity-btn" data-granularity="quarter">Quarterly</button>
           </div>
         </div>
         <div class="chart-wrap"><canvas id="chartOverTime"></canvas></div>
@@ -2237,8 +2281,12 @@ body.custom-build-mode .map-card #map-expand-btn {
       <div class="chart-card chart-compact">
         <div class="chart-header">
           <div>
-            <div class="chart-title">Quarterly Growth Rate</div>
-            <div class="chart-subtitle">% change vs prior quarter &middot; current (in-progress) quarter excluded</div>
+            <div class="chart-title" id="yoy-chart-title">Annual Growth Rate</div>
+            <div class="chart-subtitle" id="yoy-chart-subtitle">% change vs prior year &middot; current (in-progress) year excluded</div>
+          </div>
+          <div class="chart-toggle-group" role="group" aria-label="Granularity">
+            <button type="button" class="chart-toggle-btn yoy-granularity-btn active" data-granularity="year">Annual</button>
+            <button type="button" class="chart-toggle-btn yoy-granularity-btn" data-granularity="quarter">Quarterly (YoY)</button>
           </div>
         </div>
         <div class="chart-wrap"><canvas id="chartYoY"></canvas></div>
@@ -2283,8 +2331,8 @@ body.custom-build-mode .map-card #map-expand-btn {
         <p>Top firms' share evolution and cumulative investment trajectory</p>
       </div>
 
-      <!-- Chart 11: Consultant Market Share Evolution -->
-      <div class="chart-card chart-full">
+      <!-- Chart 11: Consultant Market Share Evolution (B4: half-height) -->
+      <div class="chart-card chart-full chart-half">
         <div class="chart-header">
           <div>
             <div class="chart-title">Top 5 Market Share Evolution</div>
@@ -4471,8 +4519,8 @@ function renderOverTime() {
     return;
   }
 
-  // Granularity: user-toggleable (defaults to quarterly)
-  var granularity = STATE.overTimeGranularity || 'quarter';
+  // Granularity: user-toggleable (defaults to annual per B2 spec)
+  var granularity = STATE.overTimeGranularity || 'year';
 
   // Build time-bucket totals
   const bucketTotals = {};
@@ -4575,7 +4623,7 @@ function renderOverTime() {
       });
       renderOverTime();
     });
-    btn.classList.toggle('active', (btn.dataset.granularity || 'quarter') === granularity);
+    btn.classList.toggle('active', (btn.dataset.granularity || 'year') === granularity);
   });
 }
 
@@ -4954,41 +5002,79 @@ function renderAvgSize() {
    Chart 7: Year-over-Year Growth Rate (bar)
 ------------------------------------------------------------------ */
 function renderYoY() {
-  // Quarterly growth rate — quarter totals vs prior quarter.
-  // Current (in-progress) quarter is excluded so a partial quarter doesn't
-  // show as "-70%" against a full prior quarter.
+  // Year-over-year growth rate chart. Toggle:
+  //   - 'year'    (default): each full year vs prior year (annual YoY).
+  //   - 'quarter' mode:      each quarter vs the SAME quarter prior year
+  //                          (Q1-2026 vs Q1-2025 vs Q1-2024 …), NOT
+  //                          sequential Q4->Q1 which would be a seasonality
+  //                          artifact, not growth.
+  // Current (in-progress) quarter/year is excluded so a partial period
+  // doesn't show as "-70%" against a full prior period.
+  const mode = STATE.yoyGranularity || 'year';
+  const titleEl  = document.getElementById('yoy-chart-title');
+  const subEl    = document.getElementById('yoy-chart-subtitle');
+  if (titleEl) titleEl.textContent = (mode === 'quarter') ? 'Quarterly YoY Growth Rate' : 'Annual Growth Rate';
+  if (subEl)   subEl.textContent = (mode === 'quarter')
+    ? '% change vs same quarter prior year \u00b7 current (in-progress) quarter excluded'
+    : '% change vs prior year \u00b7 current (in-progress) year excluded';
+
   const withDates = STATE.filteredData.filter(function(r) { return r.date && r.amount; });
-  if (withDates.length === 0) { destroyChart('chartYoY'); return; }
+  if (withDates.length === 0) { destroyChart('chartYoY'); _wireYoYGranularityButtons(mode); return; }
 
-  const byQ = {};
-  for (const r of withDates) {
-    const d = r.date instanceof Date ? r.date : new Date(r.date);
-    if (isNaN(d.getTime())) continue;
-    const q = Math.floor(d.getMonth() / 3) + 1;
-    const key = d.getFullYear() + '-Q' + q;
-    byQ[key] = (byQ[key] || 0) + (r.amount || 0);
-  }
-
-  // Drop current quarter + any future quarters
   const now = new Date();
-  const currKey = now.getFullYear() + '-Q' + (Math.floor(now.getMonth() / 3) + 1);
-  const qKeys = Object.keys(byQ).filter(k => k < currKey).sort();
-
-  if (qKeys.length < 2) { destroyChart('chartYoY'); return; }
-
   const labels = [];
   const values = [];
   const colors = [];
-  for (let i = 1; i < qKeys.length; i++) {
-    const prev = byQ[qKeys[i - 1]];
-    const curr = byQ[qKeys[i]];
-    if (prev > 0) {
-      const pct = ((curr - prev) / prev) * 100;
-      labels.push(qKeys[i]);
-      values.push(pct);
-      colors.push(pct >= 0 ? C.TEAL : C.SALMON);
+
+  if (mode === 'quarter') {
+    // Bucket by (year, quarter) — compare Q1-2026 vs Q1-2025 vs Q1-2024 …
+    const byYQ = {};  // { 'YYYY-Qn': total }
+    for (const r of withDates) {
+      const d = r.date instanceof Date ? r.date : new Date(r.date);
+      if (isNaN(d.getTime())) continue;
+      const q = Math.floor(d.getMonth() / 3) + 1;
+      const key = d.getFullYear() + '-Q' + q;
+      byYQ[key] = (byYQ[key] || 0) + (r.amount || 0);
+    }
+    const currKey = now.getFullYear() + '-Q' + (Math.floor(now.getMonth() / 3) + 1);
+    // Include all complete past quarters (drop the current, in-progress one).
+    const qKeys = Object.keys(byYQ).filter(k => k < currKey).sort();
+    qKeys.forEach(function(k) {
+      const year = parseInt(k.slice(0, 4), 10);
+      const qStr = k.slice(5);  // 'Qn'
+      const priorKey = (year - 1) + '-' + qStr;
+      const prev = byYQ[priorKey];
+      const curr = byYQ[k];
+      if (prev && prev > 0) {
+        const pct = ((curr - prev) / prev) * 100;
+        labels.push(k);
+        values.push(pct);
+        colors.push(pct >= 0 ? C.TEAL : C.SALMON);
+      }
+    });
+  } else {
+    // Annual: sum by year, compare to prior year, drop the current year.
+    const byY = {};
+    for (const r of withDates) {
+      const d = r.date instanceof Date ? r.date : new Date(r.date);
+      if (isNaN(d.getTime())) continue;
+      byY[d.getFullYear()] = (byY[d.getFullYear()] || 0) + (r.amount || 0);
+    }
+    const curYear = now.getFullYear();
+    const yKeys = Object.keys(byY).map(Number).filter(y => y < curYear).sort();
+    for (let i = 1; i < yKeys.length; i++) {
+      const prev = byY[yKeys[i - 1]];
+      const curr = byY[yKeys[i]];
+      if (prev > 0) {
+        const pct = ((curr - prev) / prev) * 100;
+        labels.push(String(yKeys[i]));
+        values.push(pct);
+        colors.push(pct >= 0 ? C.TEAL : C.SALMON);
+      }
     }
   }
+
+  if (labels.length === 0) { destroyChart('chartYoY'); _wireYoYGranularityButtons(mode); return; }
 
   makeChart('chartYoY', 'bar', {
     labels,
@@ -5007,6 +5093,24 @@ function renderYoY() {
       ...CHART_DEFAULTS.scales,
       y: { ...CHART_DEFAULTS.scales.y, ticks: { ...CHART_DEFAULTS.scales.y.ticks, callback: v => Math.round(v) + '%' } },
     },
+  });
+
+  _wireYoYGranularityButtons(mode);
+}
+
+function _wireYoYGranularityButtons(mode) {
+  document.querySelectorAll('.yoy-granularity-btn').forEach(function(btn) {
+    if (!btn._wired) {
+      btn._wired = true;
+      btn.addEventListener('click', function() {
+        STATE.yoyGranularity = this.dataset.granularity;
+        document.querySelectorAll('.yoy-granularity-btn').forEach(function(b) {
+          b.classList.toggle('active', b.dataset.granularity === STATE.yoyGranularity);
+        });
+        renderYoY();
+      });
+    }
+    btn.classList.toggle('active', (btn.dataset.granularity || 'year') === mode);
   });
 }
 
