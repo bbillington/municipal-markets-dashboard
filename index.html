@@ -2124,6 +2124,13 @@ body.custom-build-mode .map-card #map-expand-btn {
     <div class="outlier-details" style="display:none; margin-top:6px; padding-top:6px; border-top:1px solid rgba(252,103,88,.15); font-size:10px; color:var(--seafoam); line-height:1.6;" id="outlier-details"></div>
   </div>
 
+  <!-- On-call / master-services panel awards banner -->
+  <div id="oncall-banner" style="display:none; background:rgba(17,94,107,.05); border:1px solid rgba(17,94,107,.18); border-left:4px solid var(--teal); border-radius:var(--radius); padding:8px 14px; margin-bottom:16px; font-size:11px; color:var(--dark); cursor:pointer;" onclick="this.querySelector('.oncall-details').style.display=this.querySelector('.oncall-details').style.display==='none'?'block':'none'">
+    <span style="font-weight:700; color:var(--teal);">&#9432; On-call panel awards</span>
+    <span id="oncall-count"></span> — RFQ-shortlist / as-needed placements, not counted as contracts. Click for the list.
+    <div class="oncall-details" style="display:none; margin-top:6px; padding-top:6px; border-top:1px solid rgba(17,94,107,.18); font-size:10px; color:var(--seafoam); line-height:1.6;" id="oncall-details"></div>
+  </div>
+
   <!-- Architecture / civic-campus outlier toggle -->
   <div id="outlier-toggle-box" style="display:none; background:rgba(28,53,94,.04); border:1px solid rgba(28,53,94,.15); border-left:4px solid var(--primary); border-radius:var(--radius); padding:10px 14px; margin-bottom:16px; font-size:12px; color:var(--dark);">
     <label style="display:inline-flex; align-items:center; gap:8px; cursor:pointer; font-weight:600; user-select:none;">
@@ -2829,17 +2836,26 @@ function loadContractData() {
         return true;
       });
 
-      // Pass C: drop any remaining $0 entries — these are extraction failures with no match elsewhere
-      // (i.e., we couldn't recover the amount even with fuzzy matching — not safe to include)
-      var beforeZeros = contracts.length;
+      // Pass C: drop any remaining $0 entries. Split into two buckets:
+      //   - is_oncall=true: legitimate on-call / master-services / as-needed
+      //     panel awards. RFQ-shortlist placements, not committed contracts —
+      //     shouldn't inflate "contracts" count or show as "extraction failed".
+      //     Kept in STATE.onCallAwards for a future on-call-bench feature.
+      //   - everything else amount=0: extraction failure.
+      var oncallLog = [];
+      STATE.onCallAwards = [];
       contracts = contracts.filter(function(r) {
-        if ((r.amount || 0) === 0) {
-          outlierLog.push('<b>No amount:</b> ' + r.company + ' — ' + (r.project||'').substring(0, 50) + ' (extraction failed)');
-          return false;
+        if ((r.amount || 0) !== 0) return true;
+        if (r.is_oncall) {
+          STATE.onCallAwards.push(r);
+          oncallLog.push('<b>On-call panel:</b> ' + r.company + ' \u2014 ' + (r.project||'').substring(0, 60) + ' <i>(' + r.city + ')</i>');
+        } else {
+          outlierLog.push('<b>No amount:</b> ' + r.company + ' \u2014 ' + (r.project||'').substring(0, 50) + ' (extraction failed)');
         }
-        return true;
+        return false;
       });
       STATE.outlierLog = outlierLog;
+      STATE.onCallLog = oncallLog;
 
       // Split toggleable outliers (Perkins & Will, DLR Group) so the UI
       // toggle can include/exclude them without re-running the pipeline.
@@ -3785,8 +3801,20 @@ function finalizeDashboard() {
     var od = document.getElementById('outlier-details');
     if (ob) {
       ob.style.display = '';
-      if (oc) oc.textContent = '(' + STATE.outlierLog.length + ' contracts excluded: architecture, non-engineering, duplicates)';
+      if (oc) oc.textContent = '(' + STATE.outlierLog.length + ' contracts excluded: architecture, non-engineering, duplicates, extraction failures)';
       if (od) od.innerHTML = STATE.outlierLog.join('<br>');
+    }
+  }
+
+  // Show on-call panel banner if any were flagged
+  if (STATE.onCallLog && STATE.onCallLog.length > 0) {
+    var ocb = document.getElementById('oncall-banner');
+    var occ = document.getElementById('oncall-count');
+    var ocd = document.getElementById('oncall-details');
+    if (ocb) {
+      ocb.style.display = '';
+      if (occ) occ.textContent = '(' + STATE.onCallLog.length + ')';
+      if (ocd) ocd.innerHTML = STATE.onCallLog.join('<br>');
     }
   }
 

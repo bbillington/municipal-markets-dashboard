@@ -149,6 +149,56 @@ OUTLIER_TOGGLEABLE_FIRMS = [
 OUTLIER_TOGGLEABLE_THRESHOLDS: list = []
 
 
+# ── On-call / master-services detection ──────────────────────────────────────
+# Rows that look like on-call / as-needed / master-services panel awards
+# (typical RFQ-shortlist placements with no committed aggregate). These are
+# eligibility, not committed contracts — they should NOT be counted as a
+# "contract" in the dashboard's contract total. Kept in the JSON with
+# is_oncall=true so a future "on-call bench by city" feature can use them.
+ONCALL_PATTERNS = [
+    "on-call",
+    "on call",
+    "oncall",
+    "as-needed",
+    "as needed",
+    "master services",
+    "master service",
+    "master agreement",
+    "indefinite delivery",
+    "indefinite quantity",
+    "task order",
+    "task-order",
+    "rfq panel",
+    "rfq pool",
+    "rotation list",
+    "pre-qualified list",
+    "prequalified list",
+    "qualified list",
+    "annual contract",
+    "idiq",
+    # Scope-based patterns that are typically on-call in practice
+    "debris monitoring",
+    "third-party plan review",
+    "third party plan review",
+    "building inspection services",
+    "plan review services",
+    "engineering services for stormwater drainage",  # Lancaster master panel
+    "engineering services for water and wastewater",  # ditto
+    "engineering services for transportation",  # ditto
+    "consulting services",
+]
+
+
+def _is_oncall(project: str, notes: str = "", amount: float = 0) -> bool:
+    """Return True when the row looks like an on-call / master-services
+    panel award. Only applied when amount is null/0 — a committed
+    fixed-amount contract even if named "on-call" is still a contract."""
+    if amount is not None and amount > 0:
+        return False
+    haystack = ((project or "") + " " + (notes or "")).lower()
+    return any(p in haystack for p in ONCALL_PATTERNS)
+
+
 def _is_toggleable_outlier(company: str, amount: float = 0) -> bool:
     """Return True if the contract should be flagged as a toggleable outlier."""
     if not company:
@@ -306,6 +356,8 @@ def read_city(slug, label, xlsx_path):
         }
         if _is_toggleable_outlier(company, amount):
             row_dict["outlier"] = True
+        if _is_oncall(project, notes, amount):
+            row_dict["is_oncall"] = True
         rows.append(row_dict)
 
     wb.close()
