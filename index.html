@@ -4998,29 +4998,37 @@ const CHART_DEFAULTS = {
    time a chart needs a color; map is keyed by category name.
 ------------------------------------------------------------------ */
 const _CATEGORY_COLOR_CACHE = {};
-// Named assignment — high-frequency categories get distinctive colors.
-// Gray (#D9DAE4) reserved for "Other". Full list covers the 17 normalized
-// categories in TYPE_MAP plus a few safety slots.
+// Hardcoded fallback palette — kept in sync with CATEGORY_PALETTE in
+// docs/build_dashboard_data.py. The dashboard prefers the live palette
+// from data/config.json (STATE.dashConfig.categories.palette) when it's
+// loaded, so palette changes ship via that file. This map is the safety
+// net used before config.json arrives or if it fails to load.
+//
+// Halff Salmon (#FC6758) is intentionally NOT used as a category color —
+// reserved for highlighting Halff specifically (Halff stats bar, Halff
+// scatter dot, etc.). See feedback memory.
 const CATEGORY_COLOR_MAP = {
-  'Roadway':                 '#1C355E',  // Halff navy
-  'Water / Wastewater':      '#115E6B',  // teal
-  'Planning / Study':        '#68949E',  // steel seafoam
-  'Traffic & Signals':       '#FC6758',  // salmon
-  'Facilities':              '#6F2740',  // maroon
-  'Park / Trail':            '#4A7A8A',  // mid seafoam
-  'Drainage':                '#3B5F7A',  // navy variant
-  'Survey & SUE':            '#97536A',  // mauve
-  'Construction Inspection': '#8AAFB6',  // light seafoam
-  'Technology & GIS':        '#B7CECD',  // mint
-  'Right of Way':            '#9B3426',  // brick red
-  'Environmental':           '#7A8B3F',  // olive
-  'Bridge / Structural':     '#D19447',  // amber
-  'On-Call':                 '#5E4B8B',  // purple
-  'Other Engineering':       '#A0A0A0',  // dark gray
-  'Other':                   '#D9DAE4',  // cool gray (reserved)
-  'Unknown':                 '#B0B0B0',  // mid gray
+  'Roadway':                 '#7E3F8F',  // Plum
+  'Water / Wastewater':      '#115E6B',  // Halff Teal
+  'Drainage':                '#1C355E',  // Halff Blue (water family)
+  'Planning / Study':        '#68949E',  // Halff Seafoam
+  'Park / Trail':            '#2E7D32',  // Forest green
+  'Traffic & Signals':       '#E08E45',  // Warm orange
+  'Facilities':              '#8B7355',  // Warm gray-brown
+  'Construction Inspection': '#C28E0E',  // Mustard
+  'Survey & SUE':            '#5E4B8B',  // Purple
+  'Technology & GIS':        '#00A0B0',  // Bright cyan
+  'Right of Way':            '#97536A',  // Rose
+  'Environmental':           '#9B3426',  // Brick
+  'Bridge / Structural':     '#4A7A8A',  // Slate
+  'On-Call':                 '#6B7280',  // Medium cool gray
+  'Other Engineering':       '#B7CECD',  // Halff Mint
+  'Other':                   '#D9DAE4',  // Halff Cool Gray (reserved)
+  'Unknown':                 '#D9DAE4',  // Halff Cool Gray
 };
-// Fallback palette for anything new not in the map
+// Fallback hash palette for unexpected category names not in the map
+// or in the live config palette. Same hue spectrum as CATEGORY_COLOR_MAP,
+// salmon-free.
 const CATEGORY_FALLBACK_PALETTE = [
   '#7E3F8F', '#115E6B', '#1C355E', '#68949E', '#2E7D32',
   '#E08E45', '#8B7355', '#C28E0E', '#5E4B8B', '#00A0B0',
@@ -5028,6 +5036,13 @@ const CATEGORY_FALLBACK_PALETTE = [
 ];
 function categoryColor(name) {
   if (!name) return '#999';
+  // Prefer the live palette from data/config.json — that's the single
+  // source of truth set by docs/build_dashboard_data.py. The hardcoded
+  // map below is the safety net for the brief window before config
+  // loads or in case the fetch fails entirely.
+  var livePalette = (STATE && STATE.dashConfig && STATE.dashConfig.categories
+    && STATE.dashConfig.categories.palette) || null;
+  if (livePalette && name in livePalette) return livePalette[name];
   if (name in CATEGORY_COLOR_MAP) return CATEGORY_COLOR_MAP[name];
   if (name in _CATEGORY_COLOR_CACHE) return _CATEGORY_COLOR_CACHE[name];
   // Stable hash-to-palette for unexpected category names
