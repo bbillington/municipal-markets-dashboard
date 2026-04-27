@@ -5156,6 +5156,10 @@ function renderCityBar() {
   }, {
     ...CHART_DEFAULTS,
     indexAxis: 'y',
+    // Same axis: 'y' rule applied chart-wide, not just tooltip — without
+    // this Chart.js's hover-element resolution still uses x-position and
+    // the tooltip can flicker between rows mid-row-hover.
+    interaction: { mode: 'index', axis: 'y', intersect: false },
     plugins: {
       ...CHART_DEFAULTS.plugins,
       legend: {
@@ -5167,7 +5171,13 @@ function renderCityBar() {
       },
       tooltip: {
         ...CHART_DEFAULTS.plugins.tooltip,
+        // Horizontal bars (indexAxis: 'y'): use axis-y matching so the
+        // tooltip locks onto the row whose center is closest to the cursor.
+        // The Chart.js default 'index' picks by X position, which on
+        // horizontal bars makes the tooltip jump between cities as the
+        // cursor moves left/right within a single row.
         mode: 'index',
+        axis: 'y',
         intersect: false,
         displayColors: true,
         callbacks: {
