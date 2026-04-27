@@ -19,8 +19,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <!-- City boundary GeoJSON data -->
 <script src="city_boundaries.js"></script>
-<!-- App version -->
-<script src="version.js?v=2.11"></script>
 <!-- PDF export libraries -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
@@ -106,29 +104,7 @@ body {
   white-space: nowrap;
   display: flex;
   gap: 14px;
-  align-items: center;
 }
-.nav-stats > span { display: inline-flex; align-items: center; }
-.nav-stats > span + span::before {
-  content: '';
-  display: inline-block;
-  width: 1px;
-  height: 12px;
-  background: rgba(255,255,255,.25);
-  margin-right: 14px;
-}
-
-/* Version badge — top-right of nav */
-.nav-version {
-  font-size: 10px;
-  font-weight: 600;
-  color: rgba(255,255,255,.5);
-  letter-spacing: .5px;
-  margin-left: 12px;
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-}
-.nav-version:hover { color: rgba(255,255,255,.85); }
 
 .nav-tabs {
   display: flex;
@@ -306,7 +282,11 @@ body {
   overflow: visible;
   position: sticky;
   top: var(--nav-h);
-  z-index: 1100;
+  /* Must outrank #chart-scrim (9998) and .chart-card.expanded (9999) so the
+     filter bar stays fully interactive while a chart is expanded. Scrim's
+     top is offset by expandCard() so it only darkens the area below the
+     filter bar, preserving visual access to the controls. */
+  z-index: 10001;
 }
 
 .filter-group {
@@ -626,24 +606,23 @@ body {
 /* ======================================================================
    KPI CARDS
 ====================================================================== */
-/* B1 (Option 1): KPI row HIDDEN — totals now live inline in the nav-stats
-   bar at the top of the page. Keep the rule in case any logic still
-   queries the element. */
 #kpi-row {
-  display: none;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
 }
 
 .kpi-card {
   background: var(--white);
   border-radius: var(--radius);
-  padding: 6px 12px;
+  padding: 18px 20px;
   box-shadow: var(--shadow);
-  border-left: 3px solid var(--blue);
+  border-left: 4px solid var(--blue);
   display: flex;
-  align-items: center;
-  gap: 10px;
+  align-items: flex-start;
+  gap: 14px;
   transition: box-shadow .2s;
-  min-height: 0;
 }
 .kpi-card:hover { box-shadow: var(--shadow-md); }
 .kpi-card:nth-child(1) { border-left-color: var(--blue); }
@@ -651,26 +630,26 @@ body {
 .kpi-card:nth-child(3) { border-left-color: var(--seafoam); }
 .kpi-card:nth-child(4) { border-left-color: var(--dark); }
 
-.kpi-icon { font-size: 16px; flex-shrink: 0; line-height: 1; }
-.kpi-body { min-width: 0; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.kpi-icon { font-size: 28px; flex-shrink: 0; line-height: 1; }
+.kpi-body { min-width: 0; }
 .kpi-value {
-  font-size: 17px;
+  font-size: 36px;
   font-weight: 700;
   color: var(--blue);
   line-height: 1.1;
   white-space: nowrap;
 }
 .kpi-label {
-  font-size: 9px;
+  font-size: 11px;
   color: var(--seafoam);
   text-transform: uppercase;
-  letter-spacing: .5px;
-  margin-top: 0;
+  letter-spacing: .6px;
+  margin-top: 4px;
 }
 .kpi-compare {
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 600;
-  margin-top: 0;
+  margin-top: 4px;
 }
 .kpi-compare.up { color: #155724; }
 .kpi-compare.down { color: #9B3426; }
@@ -724,7 +703,10 @@ body {
   padding: 20px;
   box-shadow: var(--shadow);
   position: relative;
-  min-height: 300px;
+  /* 200 base so 2 stacked regular cards + 20px grid-gap match a 420px
+     chart-tall. Keeps the Market Overview section at 420px even on
+     short viewports after the nav + sticky filter bar. */
+  min-height: 200px;
   display: flex;
   flex-direction: column;
 }
@@ -735,12 +717,17 @@ body {
 
 .chart-card.chart-hero {
   grid-column: 1 / -1;
-  min-height: 380px;
+  /* Hero cards sit above the main grid — slightly taller than regular. */
+  min-height: 340px;
 }
 
 .chart-card.chart-tall {
   grid-row: span 2;
-  min-height: 620px;
+  /* 420 (was 460) — a final 40px reduction to keep the rotated X-axis
+     quarter labels ("2023 Q1" … "2026 Q2") off the viewport fold on
+     typical 900px-tall laptop viewports. Paired-left-column sum is
+     2 * 200 + 20 gap = 420, so the right column still aligns. */
+  min-height: 420px;
 }
 
 .chart-card.chart-compact {
@@ -766,39 +753,6 @@ body {
   color: var(--seafoam);
   margin-top: 2px;
 }
-
-/* Chart granularity toggle buttons (Annual / Quarterly) */
-.chart-toggle-group {
-  display: inline-flex;
-  gap: 0;
-  border: 1px solid var(--cool-gray);
-  border-radius: 6px;
-  overflow: hidden;
-  flex-shrink: 0;
-  align-self: flex-start;
-}
-.chart-toggle-btn {
-  background: var(--white);
-  border: none;
-  color: var(--seafoam);
-  padding: 4px 10px;
-  font-size: 11px;
-  font-weight: 600;
-  font-family: 'Public Sans', Arial, sans-serif;
-  cursor: pointer;
-  transition: background .15s, color .15s;
-  white-space: nowrap;
-}
-.chart-toggle-btn + .chart-toggle-btn { border-left: 1px solid var(--cool-gray); }
-.chart-toggle-btn:hover { background: var(--bg); color: var(--blue); }
-.chart-toggle-btn.active {
-  background: var(--blue);
-  color: var(--white);
-}
-
-/* B4 was here as .chart-half (height-reduce) — replaced by removing
-   .chart-full from the Market Share card so it occupies a single grid
-   column and pairs with Cumulative Spend Curve on the same row. */
 
 /* Info tooltip — small ⓘ icon with hover-reveal explanation */
 .info-tip {
@@ -859,11 +813,10 @@ body {
 }
 .btn-export-chart:hover { border-color: var(--seafoam); color: var(--blue); }
 
-/* Expand chart button (injected by JS into every .chart-card) */
+/* Expand chart button (injected by JS into .chart-header actions area).
+   Sits inline in the header flex next to any CSV / Back buttons, so the
+   two stop overlapping on cards like "Type Doughnut" that have both. */
 .btn-expand-chart {
-  position: absolute;
-  top: 14px;
-  right: 14px;
   background: transparent;
   border: 1.5px solid var(--cool-gray);
   color: var(--seafoam);
@@ -874,14 +827,19 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  z-index: 5;
+  flex-shrink: 0;
   transition: border-color .15s, color .15s, background .15s;
   padding: 0;
+  margin-left: 6px;
 }
 .btn-expand-chart:hover { border-color: var(--seafoam); color: var(--blue); background: rgba(104,148,158,.08); }
 .btn-expand-chart svg { width: 14px; height: 14px; display: block; }
 
-/* Full-screen expanded state */
+/* Full-screen expanded state.
+   `top` is set inline by expandCard() to the filter-bar's bottom so the
+   filter bar stays visible + interactive (users can change city / year /
+   category / consultant filters while viewing an expanded chart).
+   CSS default 24px is a fallback for when JS hasn't run yet. */
 .chart-card.expanded {
   position: fixed;
   top: 24px;
@@ -925,7 +883,14 @@ body.chart-expanded { overflow: hidden; }
 .chart-wrap {
   flex: 1;
   position: relative;
-  min-height: 280px;
+  /* 200 (was 280) — the chart-wrap min-height was the real driver of
+     oversized cards on the Market Overview left column (it pushed the
+     regular .chart-card natural height past any min-height the card
+     itself set). 200px is enough for a legible 5-category doughnut or
+     10-row horizontal bar without overshoot. Chart.js fills the
+     container since maintainAspectRatio:false, so the plot area just
+     compresses gracefully below the floor. */
+  min-height: 200px;
 }
 
 .chart-wrap canvas {
@@ -1457,15 +1422,9 @@ body.chart-expanded { overflow: hidden; }
 }
 
 /* ======================================================================
-   RESPONSIVE — B5 spec breakpoints
-   - desktop  > 1440  : full 2-col layout, all features
-   - laptop   1024-1440: same 2-col layout (default rules apply)
-   - tablet    640-1024: 1-col stacks; nav-stats wraps; map de-stickys
-   - mobile     < 640 : nav stacks vertically; nav-stats stacks; chart cards full-width
+   RESPONSIVE
 ====================================================================== */
-
-/* Tablet + below — was 1100px, tightened to 1024 per spec */
-@media (max-width: 1024px) {
+@media (max-width: 1100px) {
   #content-grid {
     grid-template-columns: 1fr;
   }
@@ -1476,31 +1435,12 @@ body.chart-expanded { overflow: hidden; }
   #kpi-row { grid-template-columns: repeat(2, 1fr); }
   #map-col { position: static; }
   .stat-grid { grid-template-columns: 1fr 1fr 1fr; }
-  /* Nav-stats wraps to a 2nd line if needed */
-  .nav-stats { flex-wrap: wrap; gap: 10px; font-size: 11px; }
-  .nav-stats > span + span::before { display: none; }
 }
 
-/* Mobile — was 700px, tightened to 640 per spec */
-@media (max-width: 640px) {
-  #nav {
-    flex-wrap: wrap;
-    height: auto;
-    padding: 8px 10px;
-    gap: 4px;
-  }
+@media (max-width: 700px) {
+  #nav { flex-wrap: wrap; height: auto; padding: 10px 12px; gap: 6px; }
   .nav-tabs { order: 10; width: 100%; justify-content: center; }
   .nav-title { font-size: 13px; }
-  .nav-stats {
-    order: 5;
-    width: 100%;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-right: 0;
-    font-size: 11px;
-  }
-  .nav-stats > span + span::before { display: none; }
-  .nav-version { order: 11; }
   #kpi-row { grid-template-columns: 1fr 1fr; }
   #content-grid { grid-template-columns: 1fr; }
   #chart-col { grid-template-columns: 1fr; }
@@ -1508,9 +1448,6 @@ body.chart-expanded { overflow: hidden; }
   .filter-sep { display: none; }
   .stat-grid { grid-template-columns: 1fr 1fr; }
   #pm-grid { grid-template-columns: 1fr; }
-  /* Chart card padding tighter on phones */
-  .chart-card { padding: 10px; }
-  .chart-title { font-size: 13px; }
 }
 
 /* ======================================================================
@@ -1725,6 +1662,112 @@ body.custom-build-mode .map-card #map-expand-btn {
 }
 
 /* ======================================================================
+   PROCESSING STATUS MODAL + FOOTER INFO BUTTON
+====================================================================== */
+#processing-info-btn {
+  background: none;
+  border: none;
+  color: var(--seafoam);
+  font-size: 13px;
+  line-height: 1;
+  padding: 0 0 0 6px;
+  margin: 0;
+  cursor: pointer;
+  vertical-align: middle;
+  transition: color .15s ease;
+}
+#processing-info-btn:hover,
+#processing-info-btn:focus-visible {
+  color: var(--mint);
+  outline: none;
+}
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 43, 60, 0.55);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: modalFade .15s ease-out;
+}
+.modal-backdrop[hidden] { display: none; }
+.modal-card {
+  background: var(--white);
+  color: var(--dark);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  width: min(520px, calc(100vw - 32px));
+  max-height: calc(100vh - 80px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  background: var(--dark);
+  color: var(--white);
+}
+.modal-header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--mint);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+  transition: color .15s ease;
+}
+.modal-close:hover,
+.modal-close:focus-visible {
+  color: var(--white);
+  outline: none;
+}
+.modal-body {
+  padding: 14px 18px 18px;
+  overflow-y: auto;
+}
+.modal-subtitle {
+  margin: 0 0 10px;
+  font-size: 11px;
+  color: var(--seafoam);
+}
+.modal-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.modal-table th {
+  text-align: left;
+  font-weight: 700;
+  color: var(--teal);
+  border-bottom: 2px solid var(--cool-gray);
+  padding: 6px 8px;
+}
+.modal-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--cool-gray);
+}
+.modal-table tr.row-stale td { color: var(--seafoam); }
+.modal-table tr.row-missing td {
+  color: var(--seafoam);
+  font-style: italic;
+}
+@keyframes modalFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ======================================================================
    REDUCED MOTION
 ====================================================================== */
 
@@ -1789,14 +1832,10 @@ body.custom-build-mode .map-card #map-expand-btn {
   box-shadow: 0 3px 8px rgba(0,43,60,.12);
   /* Sticky: hugs the bottom of the filter bar while scrolling through its section */
   position: sticky;
-  top: var(--sticky-top, calc(var(--nav-h) + 58px));
+  top: calc(var(--nav-h) + 58px);
   z-index: 50;
   overflow: hidden;
-  /* B6: --scroll-target-offset is set by JS on load + resize (see
-     updateScrollTargetOffset()) to actual nav + filter-bar height +
-     header buffer. Falls back to a sensible static value if the JS
-     hasn't run yet. */
-  scroll-margin-top: var(--scroll-target-offset, calc(var(--nav-h) + 130px));
+  scroll-margin-top: calc(var(--nav-h) + 90px);
 }
 .chart-section-header::before {
   content: '';
@@ -1954,14 +1993,18 @@ body.custom-build-mode .map-card #map-expand-btn {
   <div class="nav-logo-wrap">
     <img class="nav-logo-img" src="assets/halff_logo.png" alt="Halff logo" onerror="this.style.display='none'" />
   </div>
-  <span class="nav-title">Municipal Market Research</span>
+  <span class="nav-title">Municipal Market Research
+    <span style="display:inline-block;margin-left:8px;padding:1px 6px;font-size:9px;font-weight:700;letter-spacing:.8px;background:var(--salmon);color:var(--white);border-radius:3px;vertical-align:middle;">BETA</span>
+  </span>
   <div class="nav-stats" id="nav-stats"></div>
   <div class="nav-tabs" id="nav-tabs">
     <button class="nav-tab active" data-tab="tab-contracts">Contract Intelligence</button>
     <button class="nav-tab" data-tab="tab-pm">Consultant Intel</button>
+    <button class="nav-tab" id="nav-tab-pmi" data-tab="tab-pmi">PM Intelligence
+      <span style="display:inline-block;margin-left:4px;padding:0 5px;font-size:8px;font-weight:700;letter-spacing:.6px;background:var(--salmon);color:var(--white);border-radius:3px;">ALPHA</span>
+    </button>
     <button class="nav-tab" data-tab="tab-cip">Budgets &amp; Bonds</button>
     <button class="nav-tab" id="nav-tab-myview" data-tab="tab-myview" style="display:none;">My View</button>
-    <span class="nav-version" id="nav-version" title=""></span>
   </div>
 
   <!-- Custom View build controls (hidden by default; toggled in build mode) -->
@@ -2117,32 +2160,12 @@ body.custom-build-mode .map-card #map-expand-btn {
   <!-- Executive Summary -->
   <div class="exec-summary" id="exec-summary" style="display:none;"></div>
 
-  <!-- Outlier info banner -->
-  <div id="outlier-banner" style="display:none; background:rgba(252,103,88,.06); border:1px solid rgba(252,103,88,.2); border-left:4px solid var(--salmon); border-radius:var(--radius); padding:8px 14px; margin-bottom:16px; font-size:11px; color:var(--dark); cursor:pointer;" onclick="this.querySelector('.outlier-details').style.display=this.querySelector('.outlier-details').style.display==='none'?'block':'none'">
-    <span style="font-weight:700; color:var(--salmon);">&#9432; Outliers removed</span>
-    <span id="outlier-count"></span> — click for details
-    <div class="outlier-details" style="display:none; margin-top:6px; padding-top:6px; border-top:1px solid rgba(252,103,88,.15); font-size:10px; color:var(--seafoam); line-height:1.6;" id="outlier-details"></div>
-  </div>
-
-  <!-- On-call / master-services panel awards banner -->
-  <div id="oncall-banner" style="display:none; background:rgba(17,94,107,.05); border:1px solid rgba(17,94,107,.18); border-left:4px solid var(--teal); border-radius:var(--radius); padding:8px 14px; margin-bottom:16px; font-size:11px; color:var(--dark); cursor:pointer;" onclick="this.querySelector('.oncall-details').style.display=this.querySelector('.oncall-details').style.display==='none'?'block':'none'">
-    <span style="font-weight:700; color:var(--teal);">&#9432; On-call panel awards</span>
-    <span id="oncall-count"></span> — RFQ-shortlist / as-needed placements, not counted as contracts. Click for the list.
-    <div class="oncall-details" style="display:none; margin-top:6px; padding-top:6px; border-top:1px solid rgba(17,94,107,.18); font-size:10px; color:var(--seafoam); line-height:1.6;" id="oncall-details"></div>
-  </div>
-
-  <!-- Architecture / civic-campus outlier toggle -->
-  <div id="outlier-toggle-box" style="display:none; background:rgba(28,53,94,.04); border:1px solid rgba(28,53,94,.15); border-left:4px solid var(--primary); border-radius:var(--radius); padding:10px 14px; margin-bottom:16px; font-size:12px; color:var(--dark);">
-    <label style="display:inline-flex; align-items:center; gap:8px; cursor:pointer; font-weight:600; user-select:none;">
-      <input type="checkbox" id="outlier-toggle-cb" style="cursor:pointer; width:16px; height:16px;">
-      <span>Include civic-campus outliers (P&amp;W, DLR, Inspire Dallas)</span>
-      <span id="outlier-toggle-count" style="font-weight:400; color:var(--seafoam);"></span>
-    </label>
-    <div style="margin-top:6px; font-size:11px; color:var(--seafoam); line-height:1.5;">
-      Toggleable exclusions: <b>Perkins &amp; Will</b>, <b>DLR Group</b>, and <b>Inspire Dallas LLC</b> (KBHCC project manager). Architecture-led civic-campus / stadium work, distinct from engineering consultants. Default OFF &mdash; toggle to re-include.
-      <br><br>
-      Always excluded (no toggle): <b>Gensler</b>, <b>KAI Design</b>, and other pure-architecture firms with no civil engineering practice.
-    </div>
+  <!-- Pipeline status banner — surfaces any cities the manifest flagged
+       as skipped / errored so the dashboard isn't silently missing data.
+       Hidden when all cities load cleanly. -->
+  <div id="pipeline-status-banner" style="display:none; background:rgba(252,103,88,.06); border:1px solid rgba(252,103,88,.2); border-left:4px solid var(--salmon); border-radius:var(--radius); padding:8px 14px; margin-bottom:16px; font-size:11px; color:var(--dark);">
+    <span style="font-weight:700; color:var(--salmon);">&#9432; Some cities unavailable</span>
+    <span id="pipeline-status-detail" style="color:var(--seafoam);"></span>
   </div>
 
   <!-- KPI Row -->
@@ -2245,11 +2268,7 @@ body.custom-build-mode .map-card #map-expand-btn {
         <div class="chart-header">
           <div>
             <div class="chart-title">Contract Value Over Time</div>
-            <div class="chart-subtitle">Investment trend &middot; top 5 categories</div>
-          </div>
-          <div class="chart-toggle-group" role="group" aria-label="Granularity">
-            <button type="button" class="chart-toggle-btn overtime-granularity-btn active" data-granularity="year">Annual</button>
-            <button type="button" class="chart-toggle-btn overtime-granularity-btn" data-granularity="quarter">Quarterly</button>
+            <div class="chart-subtitle">Quarterly investment trend &middot; top 5 categories</div>
           </div>
         </div>
         <div class="chart-wrap"><canvas id="chartOverTime"></canvas></div>
@@ -2335,16 +2354,12 @@ body.custom-build-mode .map-card #map-expand-btn {
         </div>
       </div>
 
-      <!-- Chart 7: YoY -->
+      <!-- Chart 7: YoY Contract Value with current-year projection -->
       <div class="chart-card chart-compact">
         <div class="chart-header">
           <div>
-            <div class="chart-title" id="yoy-chart-title">Annual Growth Rate</div>
-            <div class="chart-subtitle" id="yoy-chart-subtitle">% change vs prior year &middot; current (in-progress) year excluded</div>
-          </div>
-          <div class="chart-toggle-group" role="group" aria-label="Granularity">
-            <button type="button" class="chart-toggle-btn yoy-granularity-btn active" data-granularity="year">Annual</button>
-            <button type="button" class="chart-toggle-btn yoy-granularity-btn" data-granularity="quarter">Quarterly (YoY)</button>
+            <div class="chart-title">Annual Contract Value (YoY)</div>
+            <div class="chart-subtitle">Total awarded per year &middot; striped segment = projection for in-progress year</div>
           </div>
         </div>
         <div class="chart-wrap"><canvas id="chartYoY"></canvas></div>
@@ -2389,9 +2404,8 @@ body.custom-build-mode .map-card #map-expand-btn {
         <p>Top firms' share evolution and cumulative investment trajectory</p>
       </div>
 
-      <!-- Chart 11: Consultant Market Share Evolution (B4: half-WIDTH so it
-           pairs on the same row with the Cumulative Spend Curve below) -->
-      <div class="chart-card">
+      <!-- Chart 11: Consultant Market Share Evolution -->
+      <div class="chart-card chart-full">
         <div class="chart-header">
           <div>
             <div class="chart-title">Top 5 Market Share Evolution</div>
@@ -2514,6 +2528,13 @@ body.custom-build-mode .map-card #map-expand-btn {
       <span class="filter-group-label">Name</span>
       <input type="text" id="pm-name-search" placeholder="Search by name...">
     </div>
+    <div class="filter-group">
+      <span class="filter-group-label">Sort</span>
+      <div class="map-toggle-group" style="display:inline-flex;border:1px solid var(--cool-gray);border-radius:6px;overflow:hidden;">
+        <button class="map-toggle-btn active" data-consultant-sort="count" type="button">Contracts (#)</button>
+        <button class="map-toggle-btn" data-consultant-sort="value" type="button">Value ($)</button>
+      </div>
+    </div>
     <button class="btn-reset-pm" id="btn-reset-pm">Reset</button>
   </div>
 
@@ -2533,6 +2554,68 @@ body.custom-build-mode .map-card #map-expand-btn {
   </div>
 
 </div><!-- /tab-pm -->
+
+<!-- ================================================================
+     TAB 2.5: PM INTELLIGENCE (ALPHA)
+     One card per project manager, aggregated across firms & cities.
+     Preserves firm-at-the-time so a PM who hopped firms shows both
+     tenures as separate rows within their card. Data comes from
+     docs/data/pms.json, generated by docs/build_dashboard_data.py.
+================================================================= -->
+<div class="tab-panel" id="tab-pmi">
+
+  <div style="margin-bottom:20px;">
+    <h2 style="font-size:18px;font-weight:700;color:var(--blue);margin:0 0 4px;">
+      PM Intelligence
+      <span style="display:inline-block;margin-left:8px;padding:2px 8px;font-size:10px;font-weight:700;letter-spacing:.8px;background:var(--salmon);color:var(--white);border-radius:3px;vertical-align:middle;">ALPHA</span>
+    </h2>
+    <p style="font-size:12px;color:var(--seafoam);margin:0;">Project managers aggregated across firms and cities. <span id="pmi-coverage" style="color:var(--salmon);font-weight:600;">&mdash;</span> &middot; <span style="color:var(--salmon);font-weight:600;">&#9733; = Halff Associates</span></p>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="pm-filter-bar">
+    <div class="filter-group">
+      <span class="filter-group-label">City</span>
+      <select id="pmi-city-filter">
+        <option value="">All Cities</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-group-label">Firm</span>
+      <select id="pmi-firm-filter">
+        <option value="">All Firms</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-group-label">Name</span>
+      <input type="text" id="pmi-name-search" placeholder="Search PM name...">
+    </div>
+    <div class="filter-group">
+      <span class="filter-group-label">Sort</span>
+      <div class="map-toggle-group" style="display:inline-flex;border:1px solid var(--cool-gray);border-radius:6px;overflow:hidden;">
+        <button class="map-toggle-btn active" data-pmi-sort="value" type="button">Value ($)</button>
+        <button class="map-toggle-btn" data-pmi-sort="count" type="button">Contracts (#)</button>
+      </div>
+    </div>
+    <button class="btn-reset-pm" id="btn-reset-pmi">Reset</button>
+  </div>
+
+  <!-- PM Intelligence Card Grid -->
+  <div id="pmi-grid"></div>
+
+  <!-- Empty state -->
+  <div class="pm-empty" id="pmi-empty">
+    <svg class="pm-empty-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="12" y="8" width="40" height="48" rx="3" stroke="#68949E" stroke-width="2.5"/>
+      <circle cx="32" cy="26" r="8" stroke="#68949E" stroke-width="2"/>
+      <path d="M20 46c0-6.627 5.373-12 12-12s12 5.373 12 12" stroke="#68949E" stroke-width="2" stroke-linecap="round"/>
+      <path d="M22 14h20M22 18h12" stroke="#68949E" stroke-width="1.5" stroke-linecap="round" opacity=".4"/>
+    </svg>
+    <div class="pm-empty-title">No PMs match your filters</div>
+    <div class="pm-empty-sub">PM coverage is thin today — most council docs don't carry the PM name. Running <code>py Processing/backfill_pm_names.py --use-claude</code> will improve coverage. Cover-letter-based recovery depends on whether the source PDF contains the signed transmittal.</div>
+  </div>
+
+</div><!-- /tab-pmi -->
 
 <!-- ================================================================
      TAB 3: CIP & BONDS
@@ -2590,9 +2673,33 @@ body.custom-build-mode .map-card #map-expand-btn {
      FOOTER
 ================================================================= -->
 <footer id="footer">
-  <div id="footer-text">Data freshness: &mdash; | 0 cities loaded | 0 total contracts</div>
-  <div>Generated by Halff Municipal Market Research Pipeline</div>
+  <div id="footer-text">
+    <span id="footer-text-content">0 cities loaded | 0 total contracts</span>
+    <button type="button" id="processing-info-btn" aria-label="Per-city processing details" title="Per-city processing details">&#9432;</button>
+  </div>
+  <div>Generated by Halff Municipal Market Research Pipeline <span id="footer-version" style="color:var(--seafoam);font-weight:600;"></span></div>
 </footer>
+
+<!-- ================================================================
+     PROCESSING STATUS MODAL (opened by #processing-info-btn)
+================================================================= -->
+<div id="processing-modal-backdrop" class="modal-backdrop" hidden>
+  <div id="processing-modal" class="modal-card" role="dialog" aria-modal="true" aria-labelledby="processing-modal-title">
+    <div class="modal-header">
+      <h3 id="processing-modal-title">Processing Status</h3>
+      <button type="button" id="processing-modal-close" class="modal-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-subtitle">Excel file modification time per city. Newest first.</p>
+      <table class="modal-table">
+        <thead>
+          <tr><th>City</th><th>Last processed</th><th style="text-align:right;">Contracts</th></tr>
+        </thead>
+        <tbody id="processing-modal-tbody"><!-- populated by openProcessingModal --></tbody>
+      </table>
+    </div>
+  </div>
+</div>
 
 <!-- ================================================================
      JAVASCRIPT (placeholder for later tasks)
@@ -2621,10 +2728,12 @@ const PALETTE = [
 ====================================================================== */
 const STATE = {
   allData: [], filteredData: [], filesLoaded: 0, lastModified: null,
+  manifestCities: [],  // full per-city rows from manifest.json (status, last_modified, contract_count) — consumed by the processing-status modal
   charts: {}, map: null, geoLayer: null, viewMode: 'all',
   cityMarkers: {}, cityCenters: {},
   mapDisplay: 'boundaries',  // 'boundaries' | 'circles'
   mapMetric: 'value',        // 'value' | 'contracts'
+  consultantSort: 'count',   // 'count' | 'value' — Consultant Intel tab sort
   customSelection: new Set(),  // build-mode selected card IDs
   filters: { cities: new Set(), years: new Set(), types: new Set(), consultant: '' },
   allCities: [], allYears: [], allTypes: [], debounceTimer: null,
@@ -2714,109 +2823,148 @@ function isHalff(name) {
 }
 
 /* ======================================================================
-   SECTION 4: DATA LOADING
+   SECTION 4: DATA LOADING  (v2.27 — per-city manifest + config.json)
+
+   Flow:
+     1. fetch data/manifest.json   — city directory + status
+     2. fetch data/config.json     — firm lists, palette, halff aliases
+     3. Promise.allSettled(cities) — rejected cities logged, rest render
+     4. Defensive tripwire + dedup — warn on leaks, collapse variants
+     5. finalizeDashboard()
+
+   Everything is pre-filtered by Processing/firm_filters.classify_contract()
+   at export time, so the dashboard does NO firm-list filtering here.
+   STATE.dashConfig holds the config.json contents so charts + UI can pull
+   the palette, halff aliases, and defensive tripwire list from one place.
 ====================================================================== */
 function loadContractData() {
   showLoading('Loading contract data...');
 
-  fetch('contract_data.json')
-    .then(function(res) {
-      if (!res.ok) throw new Error('HTTP ' + res.status + ': ' + res.statusText);
-      return res.json();
-    })
-    .then(function(json) {
-      var contracts = json.contracts || [];
+  var cacheBust = '?t=' + Date.now();
+
+  Promise.all([
+    fetch('data/manifest.json' + cacheBust).then(function(r) {
+      if (!r.ok) throw new Error('manifest.json HTTP ' + r.status);
+      return r.json();
+    }),
+    fetch('data/config.json' + cacheBust).then(function(r) {
+      if (!r.ok) throw new Error('config.json HTTP ' + r.status);
+      return r.json();
+    }),
+    // pms.json is optional — if it fails the PM Intelligence tab just
+    // shows an empty state. Don't let a missing file block the main load.
+    fetch('data/pms.json' + cacheBust).then(function(r) {
+      if (!r.ok) throw new Error('pms.json HTTP ' + r.status);
+      return r.json();
+    }).catch(function(err) {
+      console.warn('[loadContractData] pms.json unavailable:', err);
+      return null;
+    }),
+  ]).then(function(results) {
+    var manifest = results[0];
+    var dashConfig = results[1];
+    var pmsPayload = results[2];
+    STATE.dashConfig = dashConfig;
+    STATE.manifest = manifest;
+    STATE.pms = (pmsPayload && pmsPayload.pms) || [];
+    STATE.pmCoverage = (pmsPayload && pmsPayload.coverage) || null;
+
+    var okCities = (manifest.cities || []).filter(function(c) { return c.status === 'ok' && c.path; });
+    var skippedCities = (manifest.cities || []).filter(function(c) { return c.status !== 'ok'; });
+
+    if (okCities.length === 0) {
+      hideLoading();
+      showToast('No Data', 'manifest.json has no ok cities. Run: py docs/build_dashboard_data.py', 'error');
+      var demoEl = document.getElementById('demo-link');
+      if (demoEl) demoEl.style.display = '';
+      return;
+    }
+
+    updateLoadingText('Loading ' + okCities.length + ' cities in parallel...');
+
+    return Promise.allSettled(okCities.map(function(c) {
+      return fetch('data/' + c.path + '?v=' + encodeURIComponent(c.last_modified || manifest.generated))
+        .then(function(r) {
+          if (!r.ok) throw new Error(c.slug + ': HTTP ' + r.status);
+          return r.json();
+        })
+        .then(function(data) { return { slug: c.slug, name: c.name, data: data }; });
+    })).then(function(settled) {
+      var contracts = [];
+      var failedCities = [];
+      settled.forEach(function(s, idx) {
+        if (s.status === 'fulfilled') {
+          var cityData = s.value.data;
+          (cityData.contracts || []).forEach(function(r) {
+            contracts.push(r);
+          });
+        } else {
+          failedCities.push({
+            slug: okCities[idx].slug,
+            name: okCities[idx].name,
+            reason: s.reason && s.reason.message ? s.reason.message : 'fetch failed',
+          });
+          console.error('[loadContractData] city failed:', okCities[idx].slug, s.reason);
+        }
+      });
+
       if (contracts.length === 0) {
         hideLoading();
-        showToast('No Data', 'contract_data.json contains no contracts. Run: py docs/build_dashboard_data.py', 'error');
-        // Show demo link as fallback
-        var demoEl = document.getElementById('demo-link');
-        if (demoEl) demoEl.style.display = '';
+        showToast('No Data', 'All per-city files failed to load. Check data/ exists and is readable.', 'error');
         return;
       }
 
-      // Convert date strings to Date objects for chart compatibility
+      // Date strings → Date objects for Chart.js compatibility
       contracts.forEach(function(r) {
-        if (r.date && typeof r.date === 'string') {
-          r.date = new Date(r.date + 'T00:00:00');
-        }
+        if (r.date && typeof r.date === 'string') r.date = new Date(r.date + 'T00:00:00');
       });
 
-      // ── Outlier filtering pipeline ──
-      var outlierLog = [];
-
-      // 1. Architecture firms (building design, not engineering)
-      // NOTE: 'perkins & will' and 'dlr group' are NOT listed here — they flow
-      // through with outlier:true set by build_dashboard_data.py, and the
-      // dashboard-level toggle (STATE.includeOutliers) controls their visibility.
-      var archFirms = [
-        'harley ellis',
-        'quorum architects', 'conduit architecture', 'magee architects',
-        'hoefer welker', 'brinkley sargent', 'pgal', 'smithgroup',
-        // Hard-exclude (not toggleable): pure architecture firms, no civil practice
-        'gensler', 'm. arthur gensler',
-        'kai/alliance', 'kai design', 'kai enterprises',
-      ];
-      contracts = contracts.filter(function(r) {
-        if (!r.company) return true;
-        if (r.outlier) return true; // toggleable outliers skip the hard filter
+      // Defensive arch-firm tripwire — not a filter, just a console warning
+      // if a row ever slips through classify_contract(). Means the export
+      // layer has a gap and firm_filters needs a new pattern.
+      var tripwire = (dashConfig.defensive_arch_firms || []).concat(
+        dashConfig.defensive_non_engineering_firms || []
+      );
+      var trips = [];
+      contracts.forEach(function(r) {
+        if (!r.company) return;
         var name = r.company.toLowerCase();
-        for (var i = 0; i < archFirms.length; i++) {
-          if (name.indexOf(archFirms[i]) !== -1) {
-            outlierLog.push('<b>Architecture:</b> ' + r.company + ' — ' + (r.project||'').substring(0, 50) + ' ($' + (r.amount > 1e6 ? (r.amount/1e6).toFixed(1) + 'M' : Math.round(r.amount/1e3) + 'K') + ')');
-            return false;
+        for (var i = 0; i < tripwire.length; i++) {
+          if (name.indexOf(tripwire[i]) !== -1) {
+            trips.push(r.company + ' — ' + (r.project || '').slice(0, 50));
+            break;
           }
         }
-        return true;
       });
-
-      // 2. Non-engineering outliers (PM, construction mgmt, construction contractors)
-      var nonEngRules = [
-        { match: 'jacobs project management', reason: 'Project management / owner\'s rep' },
-        { match: 'kik underground', reason: 'Construction contractor' },
-        { match: 'design workshop', minAmount: 2000000, reason: 'Landscape architecture outlier' },
-      ];
-      contracts = contracts.filter(function(r) {
-        if (!r.company) return true;
-        var name = r.company.toLowerCase();
-        for (var i = 0; i < nonEngRules.length; i++) {
-          var rule = nonEngRules[i];
-          if (name.indexOf(rule.match) !== -1 && (!rule.minAmount || r.amount >= rule.minAmount)) {
-            outlierLog.push('<b>Non-engineering:</b> ' + r.company + ' — ' + (r.project||'').substring(0, 50) + ' ($' + (r.amount/1e6).toFixed(1) + 'M) — ' + rule.reason);
-            return false;
-          }
-        }
-        return true;
-      });
-
-      // 3. Remove duplicates — two-pass dedup with name normalization
-      // Normalizer collapses company/project variants: "Kimley-Horn and Associates, Inc." == "Kimley Horn & Associates" == "Kimley-Horn Inc"
-      function normalizeKey(s) {
-        if (!s) return '';
-        return String(s)
-          .toLowerCase()
-          .replace(/&/g, 'and')                            // "&" -> "and"
-          .replace(/\b(inc|llc|llp|lp|pllc|co|corp|ltd|pa|pc|dba)\b\.?/g, '')  // strip company suffixes
-          .replace(/[.,'"()]/g, '')                        // strip punctuation
-          .replace(/[-_/]+/g, ' ')                         // hyphens/slashes -> space
-          .replace(/\s+/g, ' ')                            // collapse whitespace
-          .trim();
+      if (trips.length) {
+        console.warn(
+          '[loadContractData] Defensive tripwire fired on ' + trips.length +
+          ' row(s). These should have been dropped by firm_filters at export:',
+          trips.slice(0, 10)
+        );
       }
 
-      // Pass A: exact match on NORMALIZED (company + project + amount)
+      // Dedup — same two-pass logic as before, kept because xlsx extraction
+      // still occasionally produces near-duplicate rows from re-processed PDFs.
+      function normalizeKey(s) {
+        if (!s) return '';
+        return String(s).toLowerCase()
+          .replace(/&/g, 'and')
+          .replace(/\b(inc|llc|llp|lp|pllc|co|corp|ltd|pa|pc|dba)\b\.?/g, '')
+          .replace(/[.,'"()]/g, '')
+          .replace(/[-_/]+/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+      }
+      var dedupLog = [];
       var seen = {};
       contracts = contracts.filter(function(r) {
-        var key = normalizeKey(r.company) + '|' + normalizeKey(r.project) + '|' + (r.amount||0);
-        if (seen[key]) {
-          outlierLog.push('<b>Duplicate:</b> ' + r.company + ' — ' + (r.project||'').substring(0, 50));
-          return false;
-        }
+        var key = normalizeKey(r.company) + '|' + normalizeKey(r.project) + '|' + (r.amount || 0);
+        if (seen[key]) { dedupLog.push(r); return false; }
         seen[key] = true;
         return true;
       });
-
-      // Pass B: same NORMALIZED (company + project), different amounts — keep highest
-      // (catches $0 ghost entries where the same firm/project has multiple extractions)
+      // Pass B — same firm+project, different amounts → keep highest
       var projBest = {};
       contracts.forEach(function(r, i) {
         var key = normalizeKey(r.company) + '|' + normalizeKey(r.project);
@@ -2829,68 +2977,55 @@ function loadContractData() {
       contracts = contracts.filter(function(r, i) {
         var key = normalizeKey(r.company) + '|' + normalizeKey(r.project);
         var info = projBest[key];
-        if (info && info.count > 1 && i !== info.bestIdx) {
-          outlierLog.push('<b>Duplicate:</b> ' + r.company + ' — ' + (r.project||'').substring(0, 50) + (r.amount === 0 ? ' ($0 ghost)' : ''));
-          return false;
-        }
+        if (info && info.count > 1 && i !== info.bestIdx) { dedupLog.push(r); return false; }
+        return true;
+      });
+      // Pass C — drop $0 ghosts
+      contracts = contracts.filter(function(r) {
+        if ((r.amount || 0) === 0) { dedupLog.push(r); return false; }
         return true;
       });
 
-      // Pass C: drop any remaining $0 entries. Split into two buckets:
-      //   - is_oncall=true: legitimate on-call / master-services / as-needed
-      //     panel awards. RFQ-shortlist placements, not committed contracts —
-      //     shouldn't inflate "contracts" count or show as "extraction failed".
-      //     Kept in STATE.onCallAwards for a future on-call-bench feature.
-      //   - everything else amount=0: extraction failure.
-      var oncallLog = [];
-      STATE.onCallAwards = [];
-      contracts = contracts.filter(function(r) {
-        if ((r.amount || 0) !== 0) return true;
-        if (r.is_oncall) {
-          STATE.onCallAwards.push(r);
-          oncallLog.push('<b>On-call panel:</b> ' + r.company + ' \u2014 ' + (r.project||'').substring(0, 60) + ' <i>(' + r.city + ')</i>');
-        } else {
-          outlierLog.push('<b>No amount:</b> ' + r.company + ' \u2014 ' + (r.project||'').substring(0, 50) + ' (extraction failed)');
-        }
-        return false;
-      });
-      STATE.outlierLog = outlierLog;
-      STATE.onCallLog = oncallLog;
+      STATE.allData = contracts;
+      STATE.filesLoaded = okCities.length;
+      STATE.failedCities = failedCities;
+      STATE.lastModified = manifest.generated ? new Date(manifest.generated).getTime() : Date.now();
+      STATE.dataGenerated = manifest.generated || null;
+      STATE.dedupDropped = dedupLog.length;
+      STATE.manifestCities = Array.isArray(manifest.cities) ? manifest.cities : [];
 
-      // Split toggleable outliers (Perkins & Will, DLR Group) so the UI
-      // toggle can include/exclude them without re-running the pipeline.
-      STATE.contractsNoOutliers = contracts.filter(function(r) { return !r.outlier; });
-      STATE.toggleableOutliers = contracts.filter(function(r) { return r.outlier; });
-      STATE.includeOutliers = false; // default: hidden
-      STATE.allData = STATE.contractsNoOutliers;
-      STATE.filesLoaded = json.cities_loaded ? json.cities_loaded.length : 1;
-      STATE.lastModified = json.generated ? new Date(json.generated).getTime() : Date.now();
-      STATE.dataGenerated = json.generated || null;
-
-      updateLoadingText('Loaded ' + contracts.length + ' contracts from ' + (json.cities_loaded || []).length + ' cities');
-
+      updateLoadingText('Loaded ' + contracts.length + ' contracts from ' + okCities.length + ' cities');
       finalizeDashboard();
 
-      // Show data freshness toast
-      if (json.generated) {
-        showToast('Data Loaded', json.total_contracts + ' contracts from ' + (json.cities_loaded || []).length + ' cities. Data generated: ' + json.generated);
+      // Surface skipped / failed cities in the banner (if any)
+      var banner = document.getElementById('pipeline-status-banner');
+      var detail = document.getElementById('pipeline-status-detail');
+      var issues = [];
+      skippedCities.forEach(function(c) {
+        issues.push(c.name + ' [' + (c.status || 'skipped') + (c.reason ? ': ' + c.reason : '') + ']');
+      });
+      failedCities.forEach(function(c) {
+        issues.push(c.name + ' [fetch: ' + c.reason + ']');
+      });
+      if (issues.length && banner) {
+        banner.style.display = '';
+        if (detail) detail.textContent = ' — ' + issues.join(', ');
       }
-      if (json.cities_skipped && json.cities_skipped.length > 0) {
-        showToast('Cities Skipped', json.cities_skipped.join(', '), 'warn');
-      }
-    })
-    .catch(function(err) {
-      hideLoading();
-      console.error('Failed to load contract_data.json:', err);
 
-      // Update drop screen to show error + demo fallback
-      var title = document.querySelector('.drop-title');
-      var sub = document.querySelector('.drop-sub');
-      if (title) title.textContent = 'Could not load contract data';
-      if (sub) sub.textContent = err.message + '. Run: py docs/build_dashboard_data.py to generate data.';
-      var demoEl = document.getElementById('demo-link');
-      if (demoEl) demoEl.style.display = '';
+      if (manifest.generated) {
+        showToast('Data Loaded', contracts.length + ' contracts from ' + okCities.length + ' cities.');
+      }
     });
+  }).catch(function(err) {
+    hideLoading();
+    console.error('Failed to load dashboard data:', err);
+    var title = document.querySelector('.drop-title');
+    var sub = document.querySelector('.drop-sub');
+    if (title) title.textContent = 'Could not load contract data';
+    if (sub) sub.textContent = err.message + '. Run: py docs/build_dashboard_data.py to generate data.';
+    var demoEl = document.getElementById('demo-link');
+    if (demoEl) demoEl.style.display = '';
+  });
 }
 
 function generateDemoData() {
@@ -3644,25 +3779,42 @@ function loadFilterState() {
     });
   }
 
+  // When a chart is expanded, keep the sticky filter bar fully visible +
+  // interactive so the user can change city / year / category / consultant
+  // without collapsing first. Measure the filter-bar's bottom at expand
+  // time and offset both the scrim and the expanded card's top to match.
+  // Falls back to 24px (the default CSS) if the filter bar is not present.
+  function _computeExpandedTopPx() {
+    var fb = document.querySelector('.filter-bar');
+    if (!fb) return 24;
+    var rect = fb.getBoundingClientRect();
+    // 8px padding below the filter bar so the expanded card doesn't sit
+    // flush against it — small gap reads as "chart sits below filters".
+    return Math.max(24, Math.round(rect.bottom + 8));
+  }
+
   function collapseExpanded() {
     var expanded = document.querySelector('.chart-card.expanded');
     if (!expanded) return;
     expanded.classList.remove('expanded');
+    expanded.style.top = '';
     var btn = expanded.querySelector('.btn-expand-chart');
     if (btn) { btn.innerHTML = EXPAND_SVG; btn.setAttribute('aria-label', 'Expand chart'); btn.setAttribute('title', 'Expand chart'); }
     var scrim = document.getElementById('chart-scrim');
-    if (scrim) scrim.classList.remove('visible');
+    if (scrim) { scrim.classList.remove('visible'); scrim.style.top = ''; }
     document.body.classList.remove('chart-expanded');
     setTimeout(function() { resizeChartsIn(expanded); }, 50);
   }
 
   function expandCard(card) {
     collapseExpanded();
+    var topPx = _computeExpandedTopPx();
     card.classList.add('expanded');
+    card.style.top = topPx + 'px';
     var btn = card.querySelector('.btn-expand-chart');
     if (btn) { btn.innerHTML = COLLAPSE_SVG; btn.setAttribute('aria-label', 'Collapse chart'); btn.setAttribute('title', 'Collapse chart'); }
     var scrim = document.getElementById('chart-scrim');
-    if (scrim) scrim.classList.add('visible');
+    if (scrim) { scrim.classList.add('visible'); scrim.style.top = topPx + 'px'; }
     document.body.classList.add('chart-expanded');
     setTimeout(function() { resizeChartsIn(card); }, 50);
   }
@@ -3682,7 +3834,29 @@ function loadFilterState() {
         if (card.classList.contains('expanded')) collapseExpanded();
         else expandCard(card);
       });
-      card.appendChild(btn);
+      // Inject into the chart-header so the expand button sits in the
+      // flex-flow next to any CSV / Back buttons instead of absolutely
+      // positioning on top of them (the old behavior overlapped on
+      // cards like the Category doughnut that carry a Back button).
+      // If the header already has an action wrapper (div holding a
+      // .btn-export-chart sibling), append expand there so both buttons
+      // stay grouped on the right. Otherwise append to header — flex
+      // `justify-content: space-between` pushes the lone expand to the
+      // right edge, which is the desired position.
+      var header = card.querySelector('.chart-header');
+      var target = null;
+      if (header) {
+        var kids = header.children;
+        for (var k = kids.length - 1; k >= 0; k--) {
+          if (kids[k].tagName === 'DIV' && kids[k].querySelector('.btn-export-chart')) {
+            target = kids[k];
+            break;
+          }
+        }
+        (target || header).appendChild(btn);
+      } else {
+        card.appendChild(btn);
+      }
     });
   }
 
@@ -3701,55 +3875,6 @@ function loadFilterState() {
 /* ======================================================================
    SECTION 6: FINALIZE DASHBOARD
 ====================================================================== */
-// Toggle Perkins & Will / DLR Group in/out of the dataset.
-// Preserves user filter selections: any dimension whose current selection
-// equals the full set gets re-expanded to the new full set; specific
-// selections are kept as-is (the user's explicit intent).
-function setIncludeOutliers(include) {
-  STATE.includeOutliers = !!include;
-  var prevAllCities = STATE.allCities || [];
-  var prevAllYears = STATE.allYears || [];
-  var prevAllTypes = STATE.allTypes || [];
-  var prevAllConsultants = STATE.allConsultants || [];
-  function wasAll(prevAll, currentSet) {
-    if (!currentSet) return true;
-    return prevAll.length > 0 && currentSet.size === prevAll.length;
-  }
-  var citiesWasAll = wasAll(prevAllCities, STATE.filters.cities);
-  var yearsWasAll = wasAll(prevAllYears, STATE.filters.years);
-  var typesWasAll = wasAll(prevAllTypes, STATE.filters.types);
-  var consultantsWasAll = wasAll(prevAllConsultants, STATE.filters.consultants);
-
-  STATE.allData = include
-    ? STATE.contractsNoOutliers.concat(STATE.toggleableOutliers)
-    : STATE.contractsNoOutliers;
-
-  STATE.allCities = unique(STATE.allData.map(function(r) { return r.city; }));
-  STATE.allYears = unique(STATE.allData.map(function(r) { return Number(r.year); }).filter(function(y) { return y && !isNaN(y); })).sort(function(a, b) { return a - b; });
-  STATE.allTypes = unique(STATE.allData.map(function(r) { return r.type; }));
-  STATE.allConsultants = unique(STATE.allData.map(function(r) { return r.company; }).filter(Boolean));
-
-  if (citiesWasAll) STATE.filters.cities = new Set(STATE.allCities);
-  if (yearsWasAll) STATE.filters.years = new Set(STATE.allYears);
-  if (typesWasAll) STATE.filters.types = new Set(STATE.allTypes);
-  if (consultantsWasAll) STATE.filters.consultants = new Set(STATE.allConsultants);
-
-  // Recompute top-10 consultants
-  var firmTotalsAll = {};
-  STATE.allData.forEach(function(r) {
-    if (!r.company) return;
-    firmTotalsAll[r.company] = (firmTotalsAll[r.company] || 0) + (r.amount || 0);
-  });
-  STATE.top10Consultants = Object.entries(firmTotalsAll)
-    .sort(function(a, b) { return b[1] - a[1]; })
-    .slice(0, 10)
-    .map(function(e) { return e[0]; });
-
-  renderFilters();
-  applyFilters();
-  updateFooter();
-}
-
 function finalizeDashboard() {
   // Derive dimensions from data
   STATE.allCities = unique(STATE.allData.map(r => r.city));
@@ -3794,46 +3919,11 @@ function finalizeDashboard() {
   // Apply filters (renders KPIs, stats, charts, map)
   applyFilters();
 
-  // Show outlier banner if any were removed
-  if (STATE.outlierLog && STATE.outlierLog.length > 0) {
-    var ob = document.getElementById('outlier-banner');
-    var oc = document.getElementById('outlier-count');
-    var od = document.getElementById('outlier-details');
-    if (ob) {
-      ob.style.display = '';
-      if (oc) oc.textContent = '(' + STATE.outlierLog.length + ' contracts excluded: architecture, non-engineering, duplicates, extraction failures)';
-      if (od) od.innerHTML = STATE.outlierLog.join('<br>');
-    }
-  }
-
-  // Show on-call panel banner if any were flagged
-  if (STATE.onCallLog && STATE.onCallLog.length > 0) {
-    var ocb = document.getElementById('oncall-banner');
-    var occ = document.getElementById('oncall-count');
-    var ocd = document.getElementById('oncall-details');
-    if (ocb) {
-      ocb.style.display = '';
-      if (occ) occ.textContent = '(' + STATE.onCallLog.length + ')';
-      if (ocd) ocd.innerHTML = STATE.onCallLog.join('<br>');
-    }
-  }
-
-  // Show Perkins & Will / DLR Group toggle if any were flagged in the data
-  if (STATE.toggleableOutliers && STATE.toggleableOutliers.length > 0) {
-    var tb = document.getElementById('outlier-toggle-box');
-    var cb = document.getElementById('outlier-toggle-cb');
-    var ct = document.getElementById('outlier-toggle-count');
-    if (tb) tb.style.display = '';
-    if (ct) {
-      var total = STATE.toggleableOutliers.reduce(function(s, r) { return s + (r.amount || 0); }, 0);
-      ct.textContent = '(' + STATE.toggleableOutliers.length + ' contracts, ' + fmtMoney(total) + ')';
-    }
-    if (cb && !cb._wired) {
-      cb.checked = !!STATE.includeOutliers;
-      cb.addEventListener('change', function() { setIncludeOutliers(cb.checked); });
-      cb._wired = true;
-    }
-  }
+  // Outlier banner / toggle UI removed in v2.27. Architecture firms are
+  // now hard-dropped by Processing/firm_filters at export time. Any leaks
+  // fire the defensive tripwire in loadContractData (console.warn only).
+  // The #pipeline-status-banner surfaces manifest.cities with non-ok status
+  // so skipped cities are visible — wired during loadContractData().
 
   // Show section quick nav
   var sectionNav = document.getElementById('section-nav');
@@ -3860,6 +3950,7 @@ function finalizeDashboard() {
 
   // Render PM tracker stub
   renderPmTracker();
+  renderPmIntelligence();
 
   // Inject expand-chart buttons into every .chart-card
   if (typeof window.injectChartExpandButtons === 'function') {
@@ -4090,7 +4181,6 @@ function updateNavStats() {
   if (!navStats) return;
   const data = STATE.filteredData;
   const totalValue = sumBy(data, r => r.amount);
-  const consultantsCount = unique(data.map(r => r.company).filter(Boolean)).length;
   const halffContracts = data.filter(r => isHalff(r.company));
   let halffSpan = '';
   if (halffContracts.length > 0) {
@@ -4100,28 +4190,121 @@ function updateNavStats() {
     '<span>' + data.length.toLocaleString() + ' contracts</span>' +
     '<span>' + fmtMoney(totalValue) + ' total</span>' +
     '<span>' + unique(data.map(r => r.city)).length + ' cities</span>' +
-    '<span>' + consultantsCount.toLocaleString() + ' consultants</span>' +
     halffSpan;
+}
 
-  // Version badge — top-right of nav
-  const verEl = document.getElementById('nav-version');
-  if (verEl && window.APP_VERSION) {
-    verEl.textContent = 'v' + window.APP_VERSION;
-    verEl.title = 'Build ' + (window.APP_BUILD || '');
-  }
+// Max `last_modified` across ok cities, as a Date — represents the most
+// recent Excel mtime anyone captured. Null if no city has a timestamp.
+function getLatestProcessingDate() {
+  if (!Array.isArray(STATE.manifestCities)) return null;
+  let maxT = 0;
+  STATE.manifestCities.forEach(function(c) {
+    if (c && c.status === 'ok' && c.last_modified) {
+      const t = new Date(c.last_modified).getTime();
+      if (t > maxT) maxT = t;
+    }
+  });
+  return maxT ? new Date(maxT) : null;
 }
 
 function updateFooter() {
-  const footerText = document.getElementById('footer-text');
-  if (!footerText) return;
-  const freshness = STATE.lastModified
-    ? new Date(STATE.lastModified).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
-    : today();
-  footerText.textContent =
-    'Data freshness: ' + freshness +
+  const contentEl = document.getElementById('footer-text-content');
+  if (!contentEl) return;
+  const latest = getLatestProcessingDate();
+  const label = latest
+    ? 'Latest processing: ' + latest.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+    : 'Latest processing: —';
+  contentEl.textContent =
+    label +
     ' | ' + STATE.filesLoaded + ' cities loaded' +
     ' | ' + STATE.allData.length.toLocaleString() + ' total contracts';
+  // Inject version string from docs/version.js (loaded via <script src>).
+  // APP_VERSION is bumped on every release — this gives users an in-page
+  // reference when reporting issues ("running v2.23") instead of having
+  // to check git tags or the top-nav badge.
+  const vEl = document.getElementById('footer-version');
+  if (vEl && window.APP_VERSION) {
+    vEl.textContent = ' — v' + window.APP_VERSION
+      + (window.APP_BUILD ? ' (' + window.APP_BUILD + ')' : '');
+  }
 }
+
+/* ======================================================================
+   PROCESSING STATUS MODAL
+   Opens from the ⓘ button in the footer. Shows per-city Excel mtimes
+   (from manifest.cities[].last_modified) sorted newest-first. Read-only.
+====================================================================== */
+function openProcessingModal() {
+  const backdrop = document.getElementById('processing-modal-backdrop');
+  const tbody = document.getElementById('processing-modal-tbody');
+  if (!backdrop || !tbody) return;
+
+  // Copy + sort by last_modified desc; ok cities first, then missing/skipped.
+  const cities = (STATE.manifestCities || []).slice().sort(function(a, b) {
+    const aOk = a && a.status === 'ok';
+    const bOk = b && b.status === 'ok';
+    if (aOk !== bOk) return aOk ? -1 : 1;
+    const aT = (a && a.last_modified) ? new Date(a.last_modified).getTime() : 0;
+    const bT = (b && b.last_modified) ? new Date(b.last_modified).getTime() : 0;
+    return bT - aT;
+  });
+
+  const now = Date.now();
+  const fmt = new Intl.DateTimeFormat('en-US', {
+    year: 'numeric', month: 'short', day: 'numeric',
+    hour: '2-digit', minute: '2-digit', hour12: false
+  });
+
+  tbody.innerHTML = cities.map(function(c) {
+    if (!c || c.status !== 'ok') {
+      const reason = c && (c.reason || c.status) ? (c.reason || c.status) : 'missing';
+      return '<tr class="row-missing"><td>' + escapeHtml(c && c.name ? c.name : '(unknown)') +
+             '</td><td colspan="2">' + escapeHtml(String(reason)) + '</td></tr>';
+    }
+    const tStr = c.last_modified ? fmt.format(new Date(c.last_modified)) : '—';
+    const ageDays = c.last_modified ? (now - new Date(c.last_modified).getTime()) / 86400000 : 0;
+    const stale = ageDays > 14 ? ' row-stale' : '';
+    const count = (typeof c.contract_count === 'number') ? c.contract_count.toLocaleString() : '—';
+    return '<tr class="row-ok' + stale + '"><td>' + escapeHtml(c.name) +
+           '</td><td>' + escapeHtml(tStr) +
+           '</td><td style="text-align:right;">' + escapeHtml(count) + '</td></tr>';
+  }).join('');
+
+  backdrop.hidden = false;
+  document.addEventListener('keydown', _processingModalEscHandler);
+}
+
+function closeProcessingModal() {
+  const backdrop = document.getElementById('processing-modal-backdrop');
+  if (backdrop) backdrop.hidden = true;
+  document.removeEventListener('keydown', _processingModalEscHandler);
+}
+
+function _processingModalEscHandler(e) {
+  if (e.key === 'Escape') closeProcessingModal();
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, function(ch) {
+    return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
+  });
+}
+
+// Wire up listeners once DOM is ready. These elements live in the static
+// HTML so we can bind immediately at script load.
+(function wireProcessingModal() {
+  const btn = document.getElementById('processing-info-btn');
+  const close = document.getElementById('processing-modal-close');
+  const backdrop = document.getElementById('processing-modal-backdrop');
+  if (btn) btn.addEventListener('click', openProcessingModal);
+  if (close) close.addEventListener('click', closeProcessingModal);
+  if (backdrop) {
+    backdrop.addEventListener('click', function(e) {
+      // Click on the backdrop itself (not a descendant) closes the modal.
+      if (e.target === backdrop) closeProcessingModal();
+    });
+  }
+})();
 
 /* ======================================================================
    SECTION 8: EXPORT FUNCTIONS
@@ -4608,8 +4791,8 @@ function renderOverTime() {
     return;
   }
 
-  // Granularity: user-toggleable (defaults to annual per B2 spec)
-  var granularity = STATE.overTimeGranularity || 'year';
+  // Granularity: user-toggleable (defaults to quarterly)
+  var granularity = STATE.overTimeGranularity || 'quarter';
 
   // Build time-bucket totals
   const bucketTotals = {};
@@ -4712,7 +4895,7 @@ function renderOverTime() {
       });
       renderOverTime();
     });
-    btn.classList.toggle('active', (btn.dataset.granularity || 'year') === granularity);
+    btn.classList.toggle('active', (btn.dataset.granularity || 'quarter') === granularity);
   });
 }
 
@@ -5090,117 +5273,166 @@ function renderAvgSize() {
 /* ------------------------------------------------------------------
    Chart 7: Year-over-Year Growth Rate (bar)
 ------------------------------------------------------------------ */
-function renderYoY() {
-  // Year-over-year growth rate chart. Toggle:
-  //   - 'year'    (default): each full year vs prior year (annual YoY).
-  //   - 'quarter' mode:      each quarter vs the SAME quarter prior year
-  //                          (Q1-2026 vs Q1-2025 vs Q1-2024 …), NOT
-  //                          sequential Q4->Q1 which would be a seasonality
-  //                          artifact, not growth.
-  // Current (in-progress) quarter/year is excluded so a partial period
-  // doesn't show as "-70%" against a full prior period.
-  const mode = STATE.yoyGranularity || 'year';
-  const titleEl  = document.getElementById('yoy-chart-title');
-  const subEl    = document.getElementById('yoy-chart-subtitle');
-  if (titleEl) titleEl.textContent = (mode === 'quarter') ? 'Quarterly YoY Growth Rate' : 'Annual Growth Rate';
-  if (subEl)   subEl.textContent = (mode === 'quarter')
-    ? '% change vs same quarter prior year \u00b7 current (in-progress) quarter excluded'
-    : '% change vs prior year \u00b7 current (in-progress) year excluded';
-
-  const withDates = STATE.filteredData.filter(function(r) { return r.date && r.amount; });
-  if (withDates.length === 0) { destroyChart('chartYoY'); _wireYoYGranularityButtons(mode); return; }
-
-  const now = new Date();
-  const labels = [];
-  const values = [];
-  const colors = [];
-
-  if (mode === 'quarter') {
-    // Bucket by (year, quarter) — compare Q1-2026 vs Q1-2025 vs Q1-2024 …
-    const byYQ = {};  // { 'YYYY-Qn': total }
-    for (const r of withDates) {
-      const d = r.date instanceof Date ? r.date : new Date(r.date);
-      if (isNaN(d.getTime())) continue;
-      const q = Math.floor(d.getMonth() / 3) + 1;
-      const key = d.getFullYear() + '-Q' + q;
-      byYQ[key] = (byYQ[key] || 0) + (r.amount || 0);
-    }
-    const currKey = now.getFullYear() + '-Q' + (Math.floor(now.getMonth() / 3) + 1);
-    // Include all complete past quarters (drop the current, in-progress one).
-    const qKeys = Object.keys(byYQ).filter(k => k < currKey).sort();
-    qKeys.forEach(function(k) {
-      const year = parseInt(k.slice(0, 4), 10);
-      const qStr = k.slice(5);  // 'Qn'
-      const priorKey = (year - 1) + '-' + qStr;
-      const prev = byYQ[priorKey];
-      const curr = byYQ[k];
-      if (prev && prev > 0) {
-        const pct = ((curr - prev) / prev) * 100;
-        labels.push(k);
-        values.push(pct);
-        colors.push(pct >= 0 ? C.TEAL : C.SALMON);
-      }
-    });
-  } else {
-    // Annual: sum by year, compare to prior year, drop the current year.
-    const byY = {};
-    for (const r of withDates) {
-      const d = r.date instanceof Date ? r.date : new Date(r.date);
-      if (isNaN(d.getTime())) continue;
-      byY[d.getFullYear()] = (byY[d.getFullYear()] || 0) + (r.amount || 0);
-    }
-    const curYear = now.getFullYear();
-    const yKeys = Object.keys(byY).map(Number).filter(y => y < curYear).sort();
-    for (let i = 1; i < yKeys.length; i++) {
-      const prev = byY[yKeys[i - 1]];
-      const curr = byY[yKeys[i]];
-      if (prev > 0) {
-        const pct = ((curr - prev) / prev) * 100;
-        labels.push(String(yKeys[i]));
-        values.push(pct);
-        colors.push(pct >= 0 ? C.TEAL : C.SALMON);
-      }
-    }
+// Year-over-year contract value with an in-progress-year projection.
+// Cached hatch pattern — built lazily the first time a projection bar
+// renders so we don't pay the canvas setup cost on every applyFilters().
+var _yoyHatchPattern = null;
+function _yoyGetHatchPattern(baseColor) {
+  // Rebuild if the base color changes (it shouldn't, but safety).
+  if (_yoyHatchPattern && _yoyHatchPattern._color === baseColor) {
+    return _yoyHatchPattern;
   }
-
-  if (labels.length === 0) { destroyChart('chartYoY'); _wireYoYGranularityButtons(mode); return; }
-
-  makeChart('chartYoY', 'bar', {
-    labels,
-    datasets: [{ data: values, backgroundColor: colors, borderRadius: 6 }],
-  }, {
-    ...CHART_DEFAULTS,
-    plugins: {
-      ...CHART_DEFAULTS.plugins,
-      legend: { display: false },
-      tooltip: {
-        ...CHART_DEFAULTS.plugins.tooltip,
-        callbacks: { label: ctx => ctx.raw.toFixed(1) + '%' },
-      },
-    },
-    scales: {
-      ...CHART_DEFAULTS.scales,
-      y: { ...CHART_DEFAULTS.scales.y, ticks: { ...CHART_DEFAULTS.scales.y.ticks, callback: v => Math.round(v) + '%' } },
-    },
-  });
-
-  _wireYoYGranularityButtons(mode);
+  var c = document.createElement('canvas');
+  c.width = c.height = 8;
+  var ctx = c.getContext('2d');
+  ctx.fillStyle = baseColor;
+  ctx.fillRect(0, 0, 8, 8);
+  ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'square';
+  ctx.beginPath();
+  ctx.moveTo(-2, 2); ctx.lineTo(2, -2);
+  ctx.moveTo(0, 8); ctx.lineTo(8, 0);
+  ctx.moveTo(6, 10); ctx.lineTo(10, 6);
+  ctx.stroke();
+  var pattern = ctx.createPattern(c, 'repeat');
+  pattern._color = baseColor;
+  _yoyHatchPattern = pattern;
+  return pattern;
 }
 
-function _wireYoYGranularityButtons(mode) {
-  document.querySelectorAll('.yoy-granularity-btn').forEach(function(btn) {
-    if (!btn._wired) {
-      btn._wired = true;
-      btn.addEventListener('click', function() {
-        STATE.yoyGranularity = this.dataset.granularity;
-        document.querySelectorAll('.yoy-granularity-btn').forEach(function(b) {
-          b.classList.toggle('active', b.dataset.granularity === STATE.yoyGranularity);
-        });
-        renderYoY();
-      });
-    }
-    btn.classList.toggle('active', (btn.dataset.granularity || 'year') === mode);
+function renderYoY() {
+  // Annual total contract value by year, with the in-progress year split
+  // into an actual-to-date segment (solid) plus a projected remainder
+  // (hatched). Projection uses YTD run-rate pro-rata over the year —
+  // deliberately simple for the first pass. A per-city-pacing-curve
+  // refinement is tracked separately.
+  var withDates = STATE.filteredData.filter(function(r) {
+    return r.date && r.amount;
   });
+  if (withDates.length === 0) { destroyChart('chartYoY'); return; }
+
+  // Group contract $ by calendar year
+  var byYear = {};
+  for (var i = 0; i < withDates.length; i++) {
+    var r = withDates[i];
+    var d = r.date instanceof Date ? r.date : new Date(r.date);
+    if (isNaN(d.getTime())) continue;
+    var y = d.getFullYear();
+    byYear[y] = (byYear[y] || 0) + (r.amount || 0);
+  }
+  var years = Object.keys(byYear).map(Number).sort(function(a, b) { return a - b; });
+  if (years.length === 0) { destroyChart('chartYoY'); return; }
+
+  var now = new Date();
+  var currYear = now.getFullYear();
+  // Day-of-year fraction for pro-rata projection. Jan 1 == 1/365, Dec 31 == 1.0.
+  var startOfYear = new Date(currYear, 0, 1);
+  var endOfYear = new Date(currYear + 1, 0, 1);
+  var fractionElapsed = Math.min(
+    1,
+    Math.max(0.02, (now - startOfYear) / (endOfYear - startOfYear))
+  );
+
+  // Parallel arrays for the stacked dataset — actual segment + projected segment.
+  var labels = [];
+  var actualData = [];
+  var projectedData = [];
+  var tooltips = [];
+  for (var j = 0; j < years.length; j++) {
+    var yr = years[j];
+    var actual = byYear[yr] || 0;
+    var projected = 0;
+    var tt = { actual: actual, projected: 0, total: actual, pct: null };
+    if (yr === currYear && actual > 0) {
+      var runRateTotal = actual / fractionElapsed;
+      projected = Math.max(0, runRateTotal - actual);
+      tt.projected = projected;
+      tt.total = actual + projected;
+    }
+    // YoY % vs the immediately-prior year (using projected total for current
+    // year so the percent is forward-looking)
+    if (j > 0) {
+      var prevActual = byYear[years[j - 1]] || 0;
+      if (prevActual > 0) tt.pct = ((tt.total - prevActual) / prevActual) * 100;
+    }
+    labels.push(String(yr));
+    actualData.push(actual);
+    projectedData.push(projected);
+    tooltips.push(tt);
+  }
+
+  var actualColor = C.TEAL;
+  var hatchColor = _yoyGetHatchPattern(actualColor);
+
+  makeChart('chartYoY', 'bar', {
+    labels: labels,
+    datasets: [
+      {
+        label: 'Actual to date',
+        data: actualData,
+        backgroundColor: actualColor,
+        borderWidth: 0,
+        stack: 'yoy',
+      },
+      {
+        label: 'Projected (YTD run-rate)',
+        data: projectedData,
+        backgroundColor: hatchColor,
+        borderColor: actualColor,
+        borderWidth: 1,
+        borderSkipped: false,
+        stack: 'yoy',
+      },
+    ],
+  }, Object.assign({}, CHART_DEFAULTS, {
+    plugins: Object.assign({}, CHART_DEFAULTS.plugins, {
+      legend: {
+        display: true,
+        position: 'top',
+        align: 'end',
+        labels: Object.assign({}, CHART_DEFAULTS.plugins.legend.labels, {
+          boxWidth: 12, boxHeight: 12, padding: 8,
+        }),
+      },
+      tooltip: Object.assign({}, CHART_DEFAULTS.plugins.tooltip, {
+        mode: 'index',
+        intersect: false,
+        callbacks: {
+          label: function(ctx) {
+            var tt = tooltips[ctx.dataIndex];
+            if (!tt) return '';
+            if (ctx.datasetIndex === 1) {
+              if (tt.projected <= 0) return null;
+              return 'Projected: ' + fmtMoney(tt.projected);
+            }
+            return 'Actual: ' + fmtMoney(tt.actual);
+          },
+          footer: function(items) {
+            if (!items.length) return '';
+            var tt = tooltips[items[0].dataIndex];
+            if (!tt) return '';
+            var lines = ['Total: ' + fmtMoney(tt.total)];
+            if (tt.pct !== null) {
+              var dir = tt.pct >= 0 ? '+' : '';
+              lines.push('YoY: ' + dir + tt.pct.toFixed(1) + '%');
+            }
+            return lines.join('\n');
+          },
+        },
+      }),
+    }),
+    scales: {
+      x: Object.assign({}, CHART_DEFAULTS.scales.x, { stacked: true }),
+      y: Object.assign({}, CHART_DEFAULTS.scales.y, {
+        stacked: true,
+        beginAtZero: true,
+        ticks: Object.assign({}, CHART_DEFAULTS.scales.y.ticks, {
+          callback: function(v) { return fmtMoney(v); },
+        }),
+      }),
+    },
+  }));
 }
 
 /* ------------------------------------------------------------------
@@ -5646,7 +5878,13 @@ function getCityStyle(cityName) {
   const selectedCity = STATE.filters.cities.size === 1 ? [...STATE.filters.cities][0] : null;
   const isSelected = selectedCity && selectedCity === cityName;
 
-  // Compute density fill (same logic whether selected or not)
+  // Compute density fill (same logic whether selected or not).
+  // Intentional design choice (revised 2026-04-21): boundaries use the
+  // SAME teal ramp for both Value and Contracts so the user can compare
+  // the two views and read the relative intensity shift per city without
+  // a color-palette confound. Circles mode keeps its own per-metric
+  // color (teal vs blue) because the circle-size channel already carries
+  // the metric — there the palette adds a redundant affordance.
   let fillColor = '#e0e0e0';
   if (rowVal > 0) {
     const cityTotals = {};
@@ -5941,6 +6179,10 @@ function updateLegend() {
     + '<span style="font-weight:700;font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:var(--blue);">' + legendTitle + '</span>'
     + '<span style="display:inline-flex;align-items:center;gap:3px;"><span style="display:inline-block;width:14px;height:10px;background:#e0e0e0;border-radius:2px;border:1px solid rgba(0,0,0,.1);"></span>None</span>';
 
+  // Legend palette matches getCityStyle — teal ramp for both Value and
+  // Contracts (see comment there). The legend's label swaps from dollar
+  // to count based on metric; the swatches stay teal so visual comparison
+  // across the Value/Contracts toggle is the same scale.
   for (var j = 0; j < steps; j++) {
     var lo = breaks[j];
     var hi = breaks[j + 1];
@@ -6120,6 +6362,25 @@ function renderPmTracker() {
     resetBtn.dataset.wired = '1';
   }
 
+  // Wire consultant sort toggle (Contracts # vs Value $). Mirrors the
+  // map-toggle-btn pattern on the Contracts tab. Only wire once.
+  var sortBtns = document.querySelectorAll('.pm-filter-bar [data-consultant-sort]');
+  sortBtns.forEach(function(btn) {
+    if (btn.dataset.wired) return;
+    btn.dataset.wired = '1';
+    btn.addEventListener('click', function() {
+      var mode = this.getAttribute('data-consultant-sort');
+      STATE.consultantSort = mode;
+      sortBtns.forEach(function(b) {
+        b.classList.toggle('active', b.getAttribute('data-consultant-sort') === mode);
+      });
+      applyPmFilters();
+    });
+    // Reflect current state on first render so the default 'count' button
+    // shows active even after a page reload.
+    btn.classList.toggle('active', btn.getAttribute('data-consultant-sort') === (STATE.consultantSort || 'count'));
+  });
+
   applyPmFilters();
 }
 
@@ -6170,9 +6431,19 @@ function applyPmFilters() {
     if (isValidPmName(row.pmName)) groups[company].pms.add(row.pmName);
   });
 
-  // Convert to array and sort by contract count descending
+  // Convert to array and sort per STATE.consultantSort (default: count).
+  // Toggle is in the pm-filter-bar; state is the string 'count' | 'value'.
   var list = Object.values(groups);
-  list.sort(function(a, b) { return b.contracts.length - a.contracts.length; });
+  var sortMode = STATE.consultantSort || 'count';
+  if (sortMode === 'value') {
+    list.sort(function(a, b) {
+      var av = a.contracts.reduce(function(s, r) { return s + (r.amount || 0); }, 0);
+      var bv = b.contracts.reduce(function(s, r) { return s + (r.amount || 0); }, 0);
+      return bv - av;
+    });
+  } else {
+    list.sort(function(a, b) { return b.contracts.length - a.contracts.length; });
+  }
 
   // Filter by name search
   if (nameVal) {
@@ -6229,6 +6500,153 @@ function applyPmFilters() {
 }
 
 /* ======================================================================
+   PM INTELLIGENCE (v2.29, ALPHA) — per-PM aggregation with firm
+   breakdown. Data source: STATE.pms (from data/pms.json). Filter logic
+   mirrors Consultant Intel so the interaction pattern is familiar.
+====================================================================== */
+function renderPmIntelligence() {
+  var citySel = document.getElementById('pmi-city-filter');
+  var firmSel = document.getElementById('pmi-firm-filter');
+  var nameInp = document.getElementById('pmi-name-search');
+  var resetBtn = document.getElementById('btn-reset-pmi');
+  var covEl = document.getElementById('pmi-coverage');
+  if (!citySel || !firmSel || !nameInp || !resetBtn) return;
+
+  // Coverage badge at top
+  if (covEl && STATE.pmCoverage) {
+    var c = STATE.pmCoverage;
+    covEl.textContent = c.with_pm + ' of ' + (c.with_pm + c.without_pm) +
+      ' contracts have PM data (' + c.percent + '% coverage)';
+  }
+
+  // Populate dropdowns from the PM dataset (not from all contracts — the
+  // PM list is already aggregated so we pull unique cities/firms from it).
+  while (citySel.options.length > 1) citySel.remove(1);
+  while (firmSel.options.length > 1) firmSel.remove(1);
+  var citySet = new Set();
+  var firmSet = new Set();
+  (STATE.pms || []).forEach(function(p) {
+    (p.cities || []).forEach(function(c) { if (c) citySet.add(c); });
+    (p.firms || []).forEach(function(f) { if (f.name) firmSet.add(f.name); });
+  });
+  Array.from(citySet).sort().forEach(function(c) {
+    var o = document.createElement('option');
+    o.value = c; o.textContent = c;
+    citySel.appendChild(o);
+  });
+  Array.from(firmSet).sort().forEach(function(f) {
+    var o = document.createElement('option');
+    o.value = f; o.textContent = f.length > 42 ? f.slice(0, 40) + '…' : f;
+    firmSel.appendChild(o);
+  });
+
+  // Wire events once
+  if (!citySel.dataset.wired) {
+    citySel.addEventListener('change', applyPmiFilters);
+    citySel.dataset.wired = '1';
+  }
+  if (!firmSel.dataset.wired) {
+    firmSel.addEventListener('change', applyPmiFilters);
+    firmSel.dataset.wired = '1';
+  }
+  if (!nameInp.dataset.wired) {
+    nameInp.addEventListener('input', applyPmiFilters);
+    nameInp.dataset.wired = '1';
+  }
+  if (!resetBtn.dataset.wired) {
+    resetBtn.addEventListener('click', function() {
+      citySel.value = '';
+      firmSel.value = '';
+      nameInp.value = '';
+      applyPmiFilters();
+    });
+    resetBtn.dataset.wired = '1';
+  }
+
+  // Sort toggle — default to value (top earners first). Same pattern as
+  // the Consultant Intel toggle.
+  var sortBtns = document.querySelectorAll('.pm-filter-bar [data-pmi-sort]');
+  sortBtns.forEach(function(btn) {
+    if (btn.dataset.wired) return;
+    btn.dataset.wired = '1';
+    btn.addEventListener('click', function() {
+      var mode = this.getAttribute('data-pmi-sort');
+      STATE.pmiSort = mode;
+      sortBtns.forEach(function(b) {
+        b.classList.toggle('active', b.getAttribute('data-pmi-sort') === mode);
+      });
+      applyPmiFilters();
+    });
+    btn.classList.toggle('active', btn.getAttribute('data-pmi-sort') === (STATE.pmiSort || 'value'));
+  });
+
+  applyPmiFilters();
+}
+
+function applyPmiFilters() {
+  var cityVal = (document.getElementById('pmi-city-filter') || {}).value || '';
+  var firmVal = (document.getElementById('pmi-firm-filter') || {}).value || '';
+  var nameVal = ((document.getElementById('pmi-name-search') || {}).value || '').toLowerCase().trim();
+  var grid = document.getElementById('pmi-grid');
+  var empty = document.getElementById('pmi-empty');
+  if (!grid) return;
+
+  var list = (STATE.pms || []).slice();
+
+  // Filter — a PM matches if they have AT LEAST ONE contract in the city /
+  // firm selected. Name filter is substring on display_name.
+  if (cityVal) list = list.filter(function(p) { return (p.cities || []).indexOf(cityVal) !== -1; });
+  if (firmVal) list = list.filter(function(p) {
+    return (p.firms || []).some(function(f) { return f.name === firmVal; });
+  });
+  if (nameVal) list = list.filter(function(p) {
+    return (p.display_name || '').toLowerCase().indexOf(nameVal) !== -1;
+  });
+
+  // Sort
+  var mode = STATE.pmiSort || 'value';
+  list.sort(function(a, b) {
+    if (mode === 'count') return b.contract_count - a.contract_count;
+    return b.total_value_usd - a.total_value_usd;
+  });
+
+  if (list.length === 0) {
+    grid.innerHTML = '';
+    if (empty) empty.style.display = '';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  var html = '';
+  list.forEach(function(p, idx) {
+    var halffFirm = (p.firms || []).some(function(f) { return isHalff(f.name); });
+    var cardClass = halffFirm ? 'pm-card halff-card' : 'pm-card';
+    var rank = idx + 1;
+    var firmsInline = (p.firms || []).map(function(f) {
+      var dr = f.date_range || {};
+      var rangeText = (dr.min || dr.max) ? ' (' + (dr.min || '').slice(0, 7) + '→' + (dr.max || '').slice(0, 7) + ')' : '';
+      return '<strong>' + escHtml(f.name) + '</strong> ' + f.count + ' × ' + fmtMoney(f.value) + rangeText;
+    }).join('<br>');
+    var typesInline = (p.types || []).map(function(t) { return escHtml(t.name) + ' (' + t.count + ')'; }).join(', ');
+    var cityList = (p.cities || []).join(', ');
+
+    html += '<div class="' + cardClass + '">'
+      + '<div class="pm-card-rank">#' + rank + '</div>'
+      + '<div class="pm-card-name">' + escHtml(p.display_name) + '</div>'
+      + '<div class="pm-card-detail">'
+      + '<strong>' + p.contract_count + '</strong> contract' + (p.contract_count !== 1 ? 's' : '')
+      + ' &middot; <strong>' + fmtMoney(p.total_value_usd) + '</strong> total'
+      + ' &middot; <strong>' + fmtMoney(p.avg_value_usd) + '</strong> avg'
+      + '</div>'
+      + '<div class="pm-card-detail"><strong>Firms:</strong><br>' + (firmsInline || 'N/A') + '</div>'
+      + '<div class="pm-card-detail"><strong>Cities:</strong> ' + escHtml(cityList || 'N/A') + '</div>'
+      + '<div class="pm-card-detail"><strong>Categories:</strong> ' + escHtml(typesInline || 'N/A') + '</div>'
+      + '</div>';
+  });
+  grid.innerHTML = html;
+}
+
+/* ======================================================================
    CUSTOM VIEW BUILDER — let users select a subset of charts + see them
    together on a dedicated "My View" tab. Persisted in localStorage.
 ====================================================================== */
@@ -6263,14 +6681,27 @@ function loadSavedCustomView() {
   try {
     var raw = localStorage.getItem(CUSTOM_VIEW_KEY);
     if (!raw) return null;
-    return JSON.parse(raw); // array of card ids
+    var parsed = JSON.parse(raw); // array of card ids
+    // Guard against a historic shape drift where JSON.parse('null') or
+    // a non-array sneaks into the key — silently return null so downstream
+    // `(saved && saved.length > 0)` checks behave correctly instead of
+    // throwing on .length.
+    if (!Array.isArray(parsed)) return null;
+    return parsed;
   } catch (e) { return null; }
 }
 
 function saveCustomView(ids) {
   try {
     localStorage.setItem(CUSTOM_VIEW_KEY, JSON.stringify(ids));
-  } catch (e) {}
+    if (window.console && console.info) {
+      console.info('[MyView] saved', ids.length, 'card(s):', ids);
+    }
+  } catch (e) {
+    if (window.console && console.warn) {
+      console.warn('[MyView] save failed:', e);
+    }
+  }
 }
 
 function clearSavedCustomView() {
@@ -6362,11 +6793,13 @@ function activateMyView() {
   // Move the selected cards INTO the My View container, remembering their origins
   container.innerHTML = '';
   var moved = 0;
+  var notFound = [];
   saved.forEach(function(id) {
     // Find the card in the Contract Intelligence tab
     var contractsTab = document.getElementById('tab-contracts');
     if (!contractsTab) return;
     var cards = contractsTab.querySelectorAll('.chart-card, .map-card');
+    var found = false;
     for (var i = 0; i < cards.length; i++) {
       var card = cards[i];
       if (getCardId(card) === id) {
@@ -6374,6 +6807,7 @@ function activateMyView() {
         STORED_PARENT_MAP.set(id, { parent: card.parentNode, next: card.nextSibling });
         container.appendChild(card);
         moved++;
+        found = true;
         // Trigger chart resize after DOM move (Chart.js needs a nudge)
         setTimeout(function() {
           var canvas = card.querySelector('canvas');
@@ -6388,7 +6822,25 @@ function activateMyView() {
         break;
       }
     }
+    if (!found) notFound.push(id);
   });
+
+  // Self-heal: if the saved view has entries but none match any current
+  // card (likely a stale ID from a prior dashboard version), clear the
+  // storage so the My View tab disappears and the user isn't left staring
+  // at an empty panel they can't escape. Log to console so a regression
+  // is diagnosable.
+  if (saved.length > 0 && moved === 0) {
+    if (window.console && console.warn) {
+      console.warn('[MyView] saved view has', saved.length,
+        'entries but none matched current cards; clearing stale storage. Missing IDs:', notFound);
+    }
+    clearSavedCustomView();
+    refreshMyViewTabVisibility();
+  } else if (notFound.length > 0 && window.console && console.info) {
+    console.info('[MyView] matched', moved, '/', saved.length,
+      '; missing IDs kept in storage for now:', notFound);
+  }
 
   if (moved === 0) {
     empty.style.display = '';
@@ -6448,48 +6900,7 @@ function switchToTab(tabId) {
 /* ======================================================================
    SECTION 10: DOMContentLoaded EVENT HANDLER
 ====================================================================== */
-/* B6: Dynamic scroll-target offset.
-   Measures the actual rendered height of #nav + #filter-bar (whichever
-   sticky things sit above the section headers) and writes the sum +
-   buffer to a CSS custom property so .chart-section-header's
-   scroll-margin-top tracks the real chrome height across breakpoints.
-   Without this, hard-coded offsets are wrong when nav/filter compress
-   on mobile or expand when nav-stats wraps to two lines on tablet. */
-function updateScrollTargetOffset() {
-  var nav = document.getElementById('nav');
-  var bar = document.getElementById('filter-bar');
-  var navH = nav ? nav.getBoundingClientRect().height : 56;
-  var barH = bar ? bar.getBoundingClientRect().height : 58;
-  var headerBuffer = 60; // space for the prior sticky section-header
-  var total = Math.round(navH + barH + headerBuffer);
-  document.documentElement.style.setProperty('--scroll-target-offset', total + 'px');
-  // Also expose the sticky top (nav + filter bar only — section header sticks here)
-  document.documentElement.style.setProperty('--sticky-top', Math.round(navH + barH) + 'px');
-}
-
-(function wireScrollTargetOffset() {
-  var t;
-  function debouncedUpdate() {
-    clearTimeout(t);
-    t = setTimeout(updateScrollTargetOffset, 120);
-  }
-  window.addEventListener('resize', debouncedUpdate);
-  // ResizeObserver catches non-resize causes (filter wrapping, content shifts)
-  if (typeof ResizeObserver !== 'undefined') {
-    var ro = new ResizeObserver(debouncedUpdate);
-    document.addEventListener('DOMContentLoaded', function() {
-      var nav = document.getElementById('nav');
-      var bar = document.getElementById('filter-bar');
-      if (nav) ro.observe(nav);
-      if (bar) ro.observe(bar);
-    });
-  }
-})();
-
 document.addEventListener('DOMContentLoaded', function() {
-
-  /* B6: prime the scroll-target offset on first paint */
-  updateScrollTargetOffset();
 
   /* --- Custom View builder wiring --- */
   var btnBuild = document.getElementById('btn-custom-build');

@@ -1,25 +1,42 @@
 """
-Build dashboard data — reads Contract Logs Excel files and produces
-docs/contract_data.json for the static dashboard.
+build_dashboard_data.py — Excel → per-city JSON pipeline (v2.27).
+
+Reads each city's Contract Logs/<slug>_contracts.xlsx Config sheet, applies
+Processing/firm_filters.classify_contract() as the single source of truth
+for arch / non-engineering / MT / facility drops, and writes:
+
+    docs/data/<slug>.json   ← per-city contracts (keep verdicts only)
+    docs/data/manifest.json ← city directory + status summary
+    docs/data/config.json   ← firm lists, category palette, halff aliases
+                              (everything the dashboard used to hardcode)
+
+Rationale for the per-city split (Item 27):
+- One corrupted xlsx / locked file / schema drift fails ONE city, not the
+  whole dashboard. Previously contract_data.json was all-or-nothing.
+- Dashboard does Promise.allSettled on manifest.cities — rejected cities
+  show as a muted pill in the footer, the other 10 render normally.
+- Tiny files (~50 KB each) parallel-load in <100 ms on a typical connection.
+
+Rationale for config.json:
+- All firm classification rules (ARCHITECTURE_FIRMS, NON_ENGINEERING_FIRMS,
+  palette, halff aliases) are now derived from a single source of truth:
+  Processing/firm_filters.py + Processing/config.py. The dashboard stops
+  carrying stale parallel lists.
 
 Usage:
     py docs/build_dashboard_data.py
-
-Reads:
-    - docs/cities_config.json   (which cities to include)
-    - Contract Logs/<slug>_contracts.xlsx  (Config sheet per city)
-
-Writes:
-    - docs/contract_data.json   (single JSON consumed by dashboard)
 """
+
+from __future__ import annotations
 
 import json
 import os
 import re
 import sys
-from datetime import datetime, date
+from collections import Counter, defaultdict
+from datetime import datetime, date, timezone
 
-# Ensure UTF-8 output
+# Ensure UTF-8 output on Windows
 if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8")
 
@@ -27,10 +44,25 @@ if sys.platform == "win32":
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(SCRIPT_DIR)
 CONFIG_PATH = os.path.join(SCRIPT_DIR, "cities_config.json")
-LOGS_DIR = os.path.join(REPO_ROOT, "Contract Logs")
-OUTPUT_PATH = os.path.join(SCRIPT_DIR, "contract_data.json")
 
-# Project type normalization (matches dashboard spec)
+# Single source of truth: Processing/ modules for paths + filters
+sys.path.insert(0, os.path.join(REPO_ROOT, "Processing"))
+from config import CONTRACT_LOGS_DIR  # noqa: E402
+from firm_filters import (  # noqa: E402
+    ARCHITECTURE_FIRMS,
+    NON_ENGINEERING_FIRMS,
+    MATERIALS_GEOTECH_FIRMS,
+    classify_contract,
+)
+
+OUTPUT_DIR = os.path.join(SCRIPT_DIR, "data")
+MANIFEST_PATH = os.path.join(OUTPUT_DIR, "manifest.json")
+DASHBOARD_CONFIG_PATH = os.path.join(OUTPUT_DIR, "config.json")
+PMS_PATH = os.path.join(OUTPUT_DIR, "pms.json")
+
+MIN_YEAR = 2023
+
+# ── Project-type normalization (matches dashboard category palette below) ───
 TYPE_MAP = {
     "roads": "Roadway",
     "road": "Roadway",
@@ -77,175 +109,33 @@ TYPE_MAP = {
     "other engineering": "Other Engineering",
 }
 
+# Category palette (category name → hex). Previously hardcoded in index.html;
+# now emitted via config.json so the dashboard consumes a single source.
+CATEGORY_PALETTE = {
+    "Roadway": "#1C355E",
+    "Water / Wastewater": "#115E6B",
+    "Planning / Study": "#68949E",
+    "Traffic & Signals": "#FC6758",
+    "Facilities": "#6F2740",
+    "Park / Trail": "#4A7A8A",
+    "Drainage": "#3B5F7A",
+    "Survey & SUE": "#97536A",
+    "Construction Inspection": "#8AAFB6",
+    "Technology & GIS": "#B7CECD",
+    "Right of Way": "#D9DAE4",
+    "Environmental": "#9B3426",
+    "Bridge / Structural": "#4A7A8A",
+    "On-Call": "#6F2740",
+    "Other Engineering": "#68949E",
+    "Unknown": "#D9DAE4",
+}
 
-MIN_YEAR = 2023  # Exclude contracts before this year
-
-# ── Architecture & non-engineering firm exclusions ──────────────────────────
-# These firms are filtered OUT of contract_data.json so the dashboard never
-# sees them.  The dashboard JS (index.html) has a parallel runtime filter as
-# a safety net, but this is the authoritative gate — it keeps the JSON small
-# and prevents architecture/non-engineering contracts from inflating stats.
-#
-# Rules:
-#   - Architecture firms: case-insensitive *partial* match against company name.
-#   - PGAL: exact-word match (avoids false positives on other acronyms).
-#   - Non-engineering firms: partial match with optional conditions.
-#   - Landscape architecture firms (Talley, JBI Partners, Mesa Design, SWA
-#     Group, Dunaway, Freese and Nichols, etc.) are deliberately KEPT.
-#   - Planning/study work is kept even if awarded to an architecture firm
-#     (that filtering is handled by project_type, not company name).
-#
-# To add/remove firms, edit the lists below and re-run this script.
-
-EXCLUDED_ARCHITECTURE_FIRMS = [
-    "harley ellis",
-    "quorum architects",
-    "conduit architecture",
-    "magee architects",
-    "hoefer welker",
-    "brinkley sargent",
-    "smithgroup",
-    # Gensler (M. Arthur Gensler Jr. & Associates, Inc.) — world's largest
-    # architecture firm by revenue. Pure architecture / interior design.
-    # No civil engineering practice. Hard-exclude (not toggleable).
-    "gensler",
-    "m. arthur gensler",
-    # KAI Enterprises — architecture-led firm. KBHCC Component 4 = architecture.
-    # Hard-exclude.
-    "kai/alliance",
-    "kai design",
-    "kai enterprises",
-    # PGAL is handled separately via exact-word match below
-]
-
-EXCLUDED_NON_ENGINEERING_FIRMS = [
-    # Only the PM division — "Jacobs Engineering" must NOT be excluded.
-    "jacobs project management",
-    # Construction contractor, not an engineering consultant.
-    "kik underground",
-]
-
-# Toggleable outliers: kept in the JSON with outlier=True so the dashboard can
-# flip them on/off. Rationale: architecture-led civic-campus/stadium work with
-# dollar values orders of magnitude above typical engineering PSAs. Distorts
-# charts and totals when mixed with engineering consultants.
-#
-# Flat firm list — EVERY contract from these firms is an outlier:
-#   - Perkins & Will: architecture firm, only hits civic-campus work at Halff's scale
-#   - DLR Group: architecture firm, same
-#   - Inspire Dallas LLC: project manager / owner's rep for KBHCC Master Plan
-#     (NOT an engineering firm — same category as jacobs project management)
-OUTLIER_TOGGLEABLE_FIRMS = [
-    "perkins & will",
-    "dlr group",
-    "inspire dallas",
-]
-
-# Threshold rules — firms whose large civic-campus/stadium work is an outlier
-# but who also do legitimate smaller engineering/planning work that should stay.
-# A contract is flagged only if firm matches AND amount >= min_amount.
-# (Empty list for now — Gensler and KAI moved to hard-exclude. Kept for
-# future use if a firm shows up that needs a per-amount rule.)
-OUTLIER_TOGGLEABLE_THRESHOLDS: list = []
+# Halff canonical aliases — dashboard uses these for the "highlight Halff row"
+# styling and top-firm rankings.
+HALFF_ALIASES = ["halff associates", "halff"]
 
 
-# ── On-call / master-services detection ──────────────────────────────────────
-# Rows that look like on-call / as-needed / master-services panel awards
-# (typical RFQ-shortlist placements with no committed aggregate). These are
-# eligibility, not committed contracts — they should NOT be counted as a
-# "contract" in the dashboard's contract total. Kept in the JSON with
-# is_oncall=true so a future "on-call bench by city" feature can use them.
-ONCALL_PATTERNS = [
-    "on-call",
-    "on call",
-    "oncall",
-    "as-needed",
-    "as needed",
-    "master services",
-    "master service",
-    "master agreement",
-    "indefinite delivery",
-    "indefinite quantity",
-    "task order",
-    "task-order",
-    "rfq panel",
-    "rfq pool",
-    "rotation list",
-    "pre-qualified list",
-    "prequalified list",
-    "qualified list",
-    "annual contract",
-    "idiq",
-    # Scope-based patterns that are typically on-call in practice
-    "debris monitoring",
-    "third-party plan review",
-    "third party plan review",
-    "building inspection services",
-    "plan review services",
-    "engineering services for stormwater drainage",  # Lancaster master panel
-    "engineering services for water and wastewater",  # ditto
-    "engineering services for transportation",  # ditto
-    "consulting services",
-]
-
-
-def _is_oncall(project: str, notes: str = "", amount: float = 0) -> bool:
-    """Return True when the row looks like an on-call / master-services
-    panel award. Only applied when amount is null/0 — a committed
-    fixed-amount contract even if named "on-call" is still a contract."""
-    if amount is not None and amount > 0:
-        return False
-    haystack = ((project or "") + " " + (notes or "")).lower()
-    return any(p in haystack for p in ONCALL_PATTERNS)
-
-
-def _is_toggleable_outlier(company: str, amount: float = 0) -> bool:
-    """Return True if the contract should be flagged as a toggleable outlier."""
-    if not company:
-        return False
-    name = company.lower()
-    for firm in OUTLIER_TOGGLEABLE_FIRMS:
-        if firm in name:
-            return True
-    try:
-        amt = float(amount) if amount else 0
-    except (ValueError, TypeError):
-        amt = 0
-    for rule in OUTLIER_TOGGLEABLE_THRESHOLDS:
-        if rule["match"] in name and amt >= rule["min_amount"]:
-            return True
-    return False
-
-
-def _is_excluded_firm(company: str) -> bool:
-    """Return True if the company should be excluded from the dashboard JSON.
-
-    Architecture firms use case-insensitive substring matching.
-    PGAL uses word-boundary matching to avoid false positives.
-    Non-engineering firms use case-insensitive substring matching.
-    Toggleable outliers (Perkins & Will, DLR Group) are NOT excluded here —
-    they pass through with outlier=True so the dashboard can show/hide them.
-    """
-    if not company:
-        return False
-    name = company.lower()
-
-    # Architecture firms — partial match
-    for firm in EXCLUDED_ARCHITECTURE_FIRMS:
-        if firm in name:
-            return True
-
-    # PGAL — exact word match (surrounded by word boundaries or at string edges)
-    # Matches: "PGAL", "PGAL, Inc.", "PGAL Architects" but not "xyzPGALabc"
-    if re.search(r"\bpgal\b", name):
-        return True
-
-    # Non-engineering firms — partial match
-    for firm in EXCLUDED_NON_ENGINEERING_FIRMS:
-        if firm in name:
-            return True
-
-    return False
+# ── Row parsing helpers ─────────────────────────────────────────────────────
 
 
 def normalize_type(raw):
@@ -254,7 +144,6 @@ def normalize_type(raw):
     key = str(raw).strip().lower()
     if key in TYPE_MAP:
         return TYPE_MAP[key]
-    # Title-case passthrough
     return str(raw).strip().title()
 
 
@@ -266,7 +155,6 @@ def parse_date(val):
         return val.strftime("%Y-%m-%d")
     if isinstance(val, date):
         return val.strftime("%Y-%m-%d")
-    # Try string parsing
     s = str(val).strip()
     for fmt in ("%Y-%m-%d", "%m/%d/%Y", "%m-%d-%Y"):
         try:
@@ -276,27 +164,27 @@ def parse_date(val):
     return None
 
 
-def read_city(slug, label, xlsx_path):
-    """Read Config sheet from a city Excel file, return list of row dicts."""
+def read_city(slug: str, label: str, xlsx_path: str) -> list:
+    """Read Config sheet from a city xlsx, return list of row dicts.
+
+    Does NOT apply firm_filters — caller runs classify_contract() so the
+    same policy applies uniformly and drop reasons are logged.
+    """
     import openpyxl
 
     wb = openpyxl.load_workbook(xlsx_path, read_only=True, data_only=True)
     if "Config" not in wb.sheetnames:
-        print(f"  WARNING: {slug} has no Config sheet, skipping")
         wb.close()
-        return []
+        raise RuntimeError("no Config sheet")
 
     ws = wb["Config"]
-
-    # Detect column layout — old Config has 12 cols (no PM Name), new has 13
     header_row = next(ws.iter_rows(min_row=1, max_row=1, values_only=True))
     headers = [str(h).strip().lower() if h else "" for h in header_row]
     has_pm = "pm name" in headers
-    # Column offsets after Notes (index 7): with PM → +1 shift for src/city/pdf/page
     pm_off = 1 if has_pm else 0
 
     rows = []
-    for i, row in enumerate(ws.iter_rows(min_row=2, values_only=True)):
+    for row in ws.iter_rows(min_row=2, values_only=True):
         year = row[0]
         date_val = parse_date(row[1])
         company = str(row[2]).strip() if row[2] else ""
@@ -311,7 +199,6 @@ def read_city(slug, label, xlsx_path):
             if len(row) > 8 + pm_off and row[8 + pm_off]
             else ""
         )
-        city = label  # Use the config label, not whatever is in the cell
         pdf_idx = 10 + pm_off
         page_idx = 11 + pm_off
         pdf_link = (
@@ -319,130 +206,427 @@ def read_city(slug, label, xlsx_path):
         )
         page_num = row[page_idx] if len(row) > page_idx else None
 
-        # Skip rows with no company and no amount (metadata rows)
         if not company and not amount:
             continue
-
-        # Exclude contracts before MIN_YEAR
         if year is not None and year < MIN_YEAR:
             continue
-
-        # Ensure amount is numeric
         try:
             amount = float(amount) if amount else 0
         except (ValueError, TypeError):
             amount = 0
-
-        # Ensure year is int
         try:
             year = int(year) if year else None
         except (ValueError, TypeError):
             year = None
 
-        row_dict = {
-            "year": year,
-            "date": date_val,
-            "company": company,
-            "amount": amount,
-            "project": project,
-            "type": proj_type,
-            "limits": limits,
-            "notes": notes,
-            "pmName": pm_name,
-            "srcFile": src_file,
-            "city": city,
-            "pdfLink": pdf_link,
-            "pageNum": int(page_num) if page_num else None,
-        }
-        if _is_toggleable_outlier(company, amount):
-            row_dict["outlier"] = True
-        if _is_oncall(project, notes, amount):
-            row_dict["is_oncall"] = True
-        rows.append(row_dict)
+        rows.append(
+            {
+                "year": year,
+                "date": date_val,
+                "company": company,
+                "amount": amount,
+                "project": project,
+                "type": proj_type,
+                "limits": limits,
+                "notes": notes,
+                "pmName": pm_name,
+                "srcFile": src_file,
+                "city": label,
+                "pdfLink": pdf_link,
+                "pageNum": int(page_num) if page_num else None,
+            }
+        )
 
     wb.close()
     return rows
 
 
+def apply_filters(rows: list) -> tuple[list, dict]:
+    """Run each row through firm_filters.classify_contract().
+    Returns (kept_rows, summary_counts).
+
+    summary_counts = {"keep": N, "drop": M, "review": K, "drop_reasons": {...}}
+    """
+    kept = []
+    counts = {"keep": 0, "drop": 0, "review": 0, "drop_reasons": {}}
+    for r in rows:
+        contract = {
+            "company": r.get("company", ""),
+            "amount": r.get("amount"),
+            "project_name": r.get("project", ""),
+            "project_type": r.get("type", ""),
+            "description": r.get("notes", ""),
+        }
+        verdict, reason = classify_contract(contract)
+        counts[verdict] = counts.get(verdict, 0) + 1
+        if verdict == "keep":
+            kept.append(r)
+        elif verdict == "drop":
+            # Collapse drop reasons to their leading phrase so summary is concise
+            reason_key = reason.split(":", 1)[0].strip() if reason else "unknown"
+            counts["drop_reasons"][reason_key] = (
+                counts["drop_reasons"].get(reason_key, 0) + 1
+            )
+    return kept, counts
+
+
+def write_city_json(slug: str, label: str, rows: list, out_dir: str, xlsx_path: str) -> dict:
+    """Write a single city's JSON file. Returns manifest entry.
+
+    ``last_modified`` reflects the source Excel mtime (not the script-run
+    time) so the dashboard can show a meaningful per-city "last processed"
+    timestamp. Previously all cities shared the generator time, which made
+    the per-city breakdown useless.
+    """
+    total_value = sum(r.get("amount") or 0 for r in rows)
+    dates = [r["date"] for r in rows if r.get("date")]
+    date_range = (
+        {"min": min(dates), "max": max(dates)}
+        if dates
+        else {"min": None, "max": None}
+    )
+    payload = {
+        "slug": slug,
+        "name": label,
+        "generated": datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds"),
+        "contract_count": len(rows),
+        "total_value_usd": total_value,
+        "contracts": rows,
+    }
+    path = os.path.join(out_dir, f"{slug}.json")
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False)
+    size_bytes = os.path.getsize(path)
+    try:
+        xlsx_mtime_iso = datetime.fromtimestamp(
+            os.path.getmtime(xlsx_path), tz=timezone.utc
+        ).astimezone().isoformat(timespec="seconds")
+    except OSError:
+        # If we somehow can't stat the xlsx, fall back to the generator
+        # time rather than omitting the field entirely.
+        xlsx_mtime_iso = payload["generated"]
+    return {
+        "slug": slug,
+        "name": label,
+        "path": f"{slug}.json",
+        "contract_count": len(rows),
+        "total_value_usd": total_value,
+        "date_range": date_range,
+        "last_modified": xlsx_mtime_iso,
+        "size_bytes": size_bytes,
+        "status": "ok",
+    }
+
+
+def write_manifest(entries: list, out_path: str) -> None:
+    """Write the manifest file. Entries include both ok + skipped cities."""
+    manifest = {
+        "generated": datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds"),
+        "generator": "build_dashboard_data.py v2.27",
+        "cities": entries,
+    }
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(manifest, f, ensure_ascii=False, indent=2)
+
+
+# ── PM aggregation (Item 26 phase 2) ──────────────────────────────────────
+
+# Credential suffixes stripped when normalizing a PM name for dedup. Each is
+# lowercase, no periods — applied after the raw name is lowercased + periods
+# removed. "John A. Smith, P.E." → "john a smith pe" → strip "pe" →
+# "john a smith". "J. Smith P.G." → "j smith pg" → "j smith".
+_PM_CREDENTIALS = (
+    "pe", "pmp", "aicp", "leed ap", "leed", "rla", "rlis",
+    "ms", "msc", "mse", "phd", "pg", "se", "aia", "asla",
+    "jr", "sr", "ii", "iii", "iv",
+    "lpss", "rbpe", "gisp", "cfm",
+)
+
+
+def normalize_pm_key(name: str) -> str:
+    """Collapse a raw PM name into a stable key for aggregation.
+
+    Strips periods + parenthetical content + credential suffixes, lowercases,
+    collapses whitespace. Intentionally does NOT collapse middle names or
+    initials — "John A. Smith" and "John Smith" stay distinct until the user
+    manually merges them. Conservative by design: merging on first+last alone
+    would conflate real different people.
+    """
+    if not name:
+        return ""
+    s = str(name).strip().lower()
+    # Remove parenthetical content — e.g. "John Smith (Halff)" → "john smith "
+    s = re.sub(r"\([^)]*\)", "", s)
+    # Drop periods so "P.E." matches "pe"
+    s = s.replace(".", "")
+    # Unify commas / hyphens / multiple whitespace → single space
+    s = re.sub(r"[,\-\u2013\u2014]+", " ", s)
+    s = re.sub(r"\s+", " ", s).strip()
+    # Peel trailing credential tokens in a loop (someone might have multiple:
+    # "John Smith, PE, PMP, LEED AP")
+    while True:
+        changed = False
+        for cred in _PM_CREDENTIALS:
+            if s.endswith(" " + cred):
+                s = s[: -(len(cred) + 1)].strip()
+                changed = True
+                break
+        if not changed:
+            break
+    return s
+
+
+def _is_valid_pm_name(raw: str, key: str) -> bool:
+    """Filter out extraction junk. Real PM names have 2+ words after normalize."""
+    if not raw or not key:
+        return False
+    if len(raw) < 3 or len(raw) > 60:
+        return False
+    if len(key.split()) < 2:
+        return False
+    # Rejects file-path-y / obvious non-names
+    bad_tokens = ("/", "\\", ".pdf", ".xlsx", "tbd", "n/a", "none", "unknown")
+    low = raw.lower()
+    if any(b in low for b in bad_tokens):
+        return False
+    return True
+
+
+def aggregate_pms(all_kept_rows: list) -> list:
+    """Group kept contracts by normalized PM key. Returns sorted PM list.
+
+    Each entry carries:
+      pm_key          — normalized key (internal dedup identifier)
+      display_name    — most-frequent raw variant (what the UI shows)
+      contract_count  — total rows attributed to this PM
+      total_value_usd — sum of amounts
+      avg_value_usd   — mean amount per contract
+      firms           — [{name, count, value, date_range}], desc by value
+                        (preserves firm-at-the-time so a PM who hopped
+                        firms shows both tenures as separate rows)
+      cities          — unique cities the PM has worked in
+      types           — [{name, count}] sorted by frequency
+    """
+    pm_rows: dict = defaultdict(list)
+    for c in all_kept_rows:
+        raw = (c.get("pmName") or "").strip()
+        key = normalize_pm_key(raw)
+        if not _is_valid_pm_name(raw, key):
+            continue
+        pm_rows[key].append(c)
+
+    out = []
+    for key, rows in pm_rows.items():
+        name_counts = Counter(r.get("pmName") for r in rows if r.get("pmName"))
+        display_name = name_counts.most_common(1)[0][0] if name_counts else key.title()
+
+        firm_groups: dict = defaultdict(list)
+        for r in rows:
+            firm_groups[r.get("company", "")].append(r)
+        firms = []
+        for firm_name, firm_rows in firm_groups.items():
+            dates = [r["date"] for r in firm_rows if r.get("date")]
+            firms.append(
+                {
+                    "name": firm_name,
+                    "count": len(firm_rows),
+                    "value": sum((r.get("amount") or 0) for r in firm_rows),
+                    "date_range": {
+                        "min": min(dates) if dates else None,
+                        "max": max(dates) if dates else None,
+                    },
+                }
+            )
+        firms.sort(key=lambda f: -f["value"])
+
+        cities = sorted({r.get("city", "") for r in rows if r.get("city")})
+        type_counts = Counter(r.get("type", "") for r in rows if r.get("type"))
+        types = [{"name": t, "count": n} for t, n in type_counts.most_common()]
+
+        total_value = sum((r.get("amount") or 0) for r in rows)
+        out.append(
+            {
+                "pm_key": key,
+                "display_name": display_name,
+                "contract_count": len(rows),
+                "total_value_usd": total_value,
+                "avg_value_usd": total_value / len(rows) if rows else 0,
+                "firms": firms,
+                "cities": cities,
+                "types": types,
+            }
+        )
+
+    out.sort(key=lambda p: (-p["total_value_usd"], -p["contract_count"]))
+    return out
+
+
+def write_pms_json(pms: list, coverage: dict, out_path: str) -> None:
+    """Emit docs/data/pms.json for the PM Intelligence tab.
+
+    ``coverage`` is a {"with_pm": N, "without_pm": M, "percent": X.X} dict
+    so the dashboard can surface a "N of M contracts have PM data" badge.
+    """
+    payload = {
+        "generated": datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds"),
+        "pm_count": len(pms),
+        "total_pm_contracts": sum(p["contract_count"] for p in pms),
+        "coverage": coverage,
+        "pms": pms,
+    }
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False)
+
+
+def write_dashboard_config(out_path: str) -> None:
+    """Emit config.json from firm_filters + palette + halff aliases.
+
+    The dashboard reads this to populate its defensive tripwire (arch firm
+    detector) and the category palette, replacing hardcoded lists that
+    previously drifted from firm_filters.py.
+    """
+    config = {
+        "generated": datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds"),
+        "halff_aliases": HALFF_ALIASES,
+        "categories": {
+            "palette": CATEGORY_PALETTE,
+            "order": list(CATEGORY_PALETTE.keys()),
+        },
+        # Defensive: dashboard logs a warning (not a filter) if any row
+        # matches these after export. Normally nothing matches — we're
+        # pre-filtering at export. Tripwire catches future regressions.
+        "defensive_arch_firms": sorted(ARCHITECTURE_FIRMS),
+        "defensive_non_engineering_firms": sorted(NON_ENGINEERING_FIRMS),
+        "defensive_materials_geotech_firms": sorted(MATERIALS_GEOTECH_FIRMS),
+    }
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(config, f, ensure_ascii=False, indent=2)
+
+
 def main():
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+
     # Load city config
     with open(CONFIG_PATH, "r", encoding="utf-8") as f:
         config = json.load(f)
-
     cities = config.get("cities", {})
-    all_rows = []
-    loaded_cities = []
-    skipped_cities = []
-    total_excluded = 0
+
+    manifest_entries = []
+    all_kept_rows: list = []  # for cross-city PM aggregation
+    total_kept = 0
+    total_dropped = 0
+    total_review = 0
+    cross_city_drop_reasons: dict = {}
 
     for slug, info in cities.items():
-        if not info.get("enabled", True):
-            skipped_cities.append(info.get("label", slug))
-            continue
-
-        xlsx_path = os.path.join(LOGS_DIR, f"{slug}_contracts.xlsx")
-        if not os.path.exists(xlsx_path):
-            print(f"  SKIP {slug}: file not found at {xlsx_path}")
-            skipped_cities.append(info.get("label", slug))
-            continue
-
         label = info.get("label", slug.title())
-        try:
-            rows = read_city(slug, label, xlsx_path)
-            # Filter out architecture / non-engineering firms before adding
-            before = len(rows)
-            excluded_names = []
-            kept = []
-            for r in rows:
-                if _is_excluded_firm(r.get("company", "")):
-                    excluded_names.append(r.get("company", "?"))
-                else:
-                    kept.append(r)
-            rows = kept
-            n_excluded = before - len(rows)
-            total_excluded += n_excluded
+        if not info.get("enabled", True):
+            manifest_entries.append(
+                {
+                    "slug": slug,
+                    "name": label,
+                    "path": None,
+                    "status": "disabled",
+                    "reason": "enabled=false in cities_config.json",
+                }
+            )
+            continue
 
-            all_rows.extend(rows)
-            loaded_cities.append(label)
-            n_outliers = sum(1 for r in rows if r.get("outlier"))
-            parts = []
-            if n_excluded:
-                parts.append(f"{n_excluded} excluded")
-            if n_outliers:
-                parts.append(f"{n_outliers} outlier-flagged")
-            suffix = f"  ({', '.join(parts)})" if parts else ""
-            print(f"  OK   {label:20s} {len(rows):5d} contracts{suffix}")
+        xlsx_path = os.path.join(CONTRACT_LOGS_DIR, f"{slug}_contracts.xlsx")
+        if not os.path.exists(xlsx_path):
+            print(f"  SKIP {label:20s} file not found")
+            manifest_entries.append(
+                {
+                    "slug": slug,
+                    "name": label,
+                    "path": None,
+                    "status": "missing",
+                    "reason": f"no file at {os.path.basename(xlsx_path)}",
+                }
+            )
+            continue
+
+        try:
+            raw = read_city(slug, label, xlsx_path)
+            kept, counts = apply_filters(raw)
+            total_kept += counts.get("keep", 0)
+            total_dropped += counts.get("drop", 0)
+            total_review += counts.get("review", 0)
+            for k, v in counts.get("drop_reasons", {}).items():
+                cross_city_drop_reasons[k] = cross_city_drop_reasons.get(k, 0) + v
+            all_kept_rows.extend(kept)
+            entry = write_city_json(slug, label, kept, OUTPUT_DIR, xlsx_path)
+            manifest_entries.append(entry)
+            summary = f"{entry['contract_count']:4d} contracts"
+            if counts.get("drop"):
+                summary += f"  ({counts['drop']} dropped)"
+            if counts.get("review"):
+                summary += f"  ({counts['review']} to review)"
+            print(f"  OK   {label:20s} {summary}")
         except PermissionError:
-            print(f"  LOCK {label:20s} file is open in another program, skipping")
-            skipped_cities.append(label)
+            print(f"  LOCK {label:20s} file open elsewhere")
+            manifest_entries.append(
+                {
+                    "slug": slug,
+                    "name": label,
+                    "path": None,
+                    "status": "locked",
+                    "reason": "file open in another program",
+                }
+            )
         except Exception as e:
             print(f"  ERR  {label:20s} {e}")
-            skipped_cities.append(label)
+            manifest_entries.append(
+                {
+                    "slug": slug,
+                    "name": label,
+                    "path": None,
+                    "status": "error",
+                    "reason": str(e)[:200],
+                }
+            )
 
-    # Build output
-    output = {
-        "generated": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "cities_loaded": sorted(loaded_cities),
-        "cities_skipped": sorted(skipped_cities),
-        "total_contracts": len(all_rows),
-        "contracts": all_rows,
+    write_manifest(manifest_entries, MANIFEST_PATH)
+    write_dashboard_config(DASHBOARD_CONFIG_PATH)
+
+    # ── PM aggregation for the PM Intelligence tab ──
+    pms = aggregate_pms(all_kept_rows)
+    with_pm = sum(p["contract_count"] for p in pms)
+    without_pm = len(all_kept_rows) - with_pm
+    pct = (with_pm / len(all_kept_rows) * 100) if all_kept_rows else 0.0
+    coverage = {
+        "with_pm": with_pm,
+        "without_pm": without_pm,
+        "percent": round(pct, 1),
     }
+    write_pms_json(pms, coverage, PMS_PATH)
+    print(
+        f"PMs aggregated: {len(pms)} unique PMs, "
+        f"{with_pm}/{len(all_kept_rows)} contracts have PM "
+        f"({pct:.1f}% coverage)"
+    )
 
-    with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
-        json.dump(output, f, ensure_ascii=False)
+    ok_cities = [e for e in manifest_entries if e.get("status") == "ok"]
+    skipped = [e for e in manifest_entries if e.get("status") != "ok"]
 
     print()
-    print(f"Output: {OUTPUT_PATH}")
-    print(f"Cities loaded: {len(loaded_cities)} ({', '.join(sorted(loaded_cities))})")
-    if skipped_cities:
+    print(f"Output:       {OUTPUT_DIR}/")
+    print(f"Cities ok:    {len(ok_cities)} ({', '.join(e['name'] for e in ok_cities)})")
+    if skipped:
         print(
-            f"Cities skipped: {len(skipped_cities)} ({', '.join(sorted(skipped_cities))})"
+            "Cities skip:  "
+            + f"{len(skipped)} "
+            + ", ".join(f"{e['name']} [{e['status']}]" for e in skipped)
         )
-    print(f"Total contracts: {len(all_rows)}")
-    if total_excluded:
-        print(f"Excluded (arch/non-eng firms): {total_excluded}")
-    size_kb = os.path.getsize(OUTPUT_PATH) / 1024
-    print(f"File size: {size_kb:.0f} KB")
+    print(f"Total kept:   {total_kept}")
+    print(f"Total dropped:{total_dropped}")
+    print(f"Total review: {total_review}")
+    if cross_city_drop_reasons:
+        print("Drop reasons:")
+        for reason, n in sorted(
+            cross_city_drop_reasons.items(), key=lambda x: -x[1]
+        ):
+            print(f"  {n:4d}  {reason}")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,167 @@
+{
+  "generated": "2026-04-27T11:29:34-05:00",
+  "generator": "build_dashboard_data.py v2.27",
+  "cities": [
+    {
+      "slug": "dallas",
+      "name": "Dallas",
+      "path": "dallas.json",
+      "contract_count": 198,
+      "total_value_usd": 178131573.27,
+      "date_range": {
+        "min": "2023-01-25",
+        "max": "2026-04-22"
+      },
+      "last_modified": "2026-04-27T11:29:08-05:00",
+      "size_bytes": 114122,
+      "status": "ok"
+    },
+    {
+      "slug": "fortworth",
+      "name": "Fort Worth",
+      "path": "fortworth.json",
+      "contract_count": 430,
+      "total_value_usd": 345703889.87,
+      "date_range": {
+        "min": "2023-01-10",
+        "max": "2026-03-31"
+      },
+      "last_modified": "2026-04-27T11:29:19-05:00",
+      "size_bytes": 239371,
+      "status": "ok"
+    },
+    {
+      "slug": "mckinney",
+      "name": "McKinney",
+      "path": "mckinney.json",
+      "contract_count": 55,
+      "total_value_usd": 32009429.0,
+      "date_range": {
+        "min": "2023-01-17",
+        "max": "2026-04-07"
+      },
+      "last_modified": "2026-04-27T11:29:23-05:00",
+      "size_bytes": 29566,
+      "status": "ok"
+    },
+    {
+      "slug": "frisco",
+      "name": "Frisco",
+      "path": "frisco.json",
+      "contract_count": 96,
+      "total_value_usd": 66047824.87,
+      "date_range": {
+        "min": "2023-02-07",
+        "max": "2026-03-17"
+      },
+      "last_modified": "2026-04-27T11:28:38-05:00",
+      "size_bytes": 69425,
+      "status": "ok"
+    },
+    {
+      "slug": "carrollton",
+      "name": "Carrollton",
+      "path": "carrollton.json",
+      "contract_count": 60,
+      "total_value_usd": 27483499.67,
+      "date_range": {
+        "min": "2023-01-24",
+        "max": "2026-03-03"
+      },
+      "last_modified": "2026-04-27T11:28:51-05:00",
+      "size_bytes": 36489,
+      "status": "ok"
+    },
+    {
+      "slug": "celina",
+      "name": "Celina",
+      "path": "celina.json",
+      "contract_count": 125,
+      "total_value_usd": 50297486.49,
+      "date_range": {
+        "min": "2023-01-10",
+        "max": "2026-04-14"
+      },
+      "last_modified": "2026-04-27T11:28:56-05:00",
+      "size_bytes": 70993,
+      "status": "ok"
+    },
+    {
+      "slug": "plano",
+      "name": "Plano",
+      "path": "plano.json",
+      "contract_count": 135,
+      "total_value_usd": 52652464.0,
+      "date_range": {
+        "min": "2023-01-09",
+        "max": "2026-03-23"
+      },
+      "last_modified": "2026-04-27T11:29:00-05:00",
+      "size_bytes": 76555,
+      "status": "ok"
+    },
+    {
+      "slug": "garland",
+      "name": "Garland",
+      "path": "garland.json",
+      "contract_count": 51,
+      "total_value_usd": 40010135.51,
+      "date_range": {
+        "min": "2023-01-10",
+        "max": "2026-04-07"
+      },
+      "last_modified": "2026-04-27T11:29:03-05:00",
+      "size_bytes": 30156,
+      "status": "ok"
+    },
+    {
+      "slug": "richardson",
+      "name": "Richardson",
+      "path": "richardson.json",
+      "contract_count": 0,
+      "total_value_usd": 0,
+      "date_range": {
+        "min": null,
+        "max": null
+      },
+      "last_modified": "2026-04-27T11:29:26-05:00",
+      "size_bytes": 146,
+      "status": "ok"
+    },
+    {
+      "slug": "lancaster",
+      "name": "Lancaster",
+      "path": "lancaster.json",
+      "contract_count": 69,
+      "total_value_usd": 9923943.0,
+      "date_range": {
+        "min": "2023-01-09",
+        "max": "2026-04-13"
+      },
+      "last_modified": "2026-04-27T11:29:25-05:00",
+      "size_bytes": 42023,
+      "status": "ok"
+    },
+    {
+      "slug": "grandprairie",
+      "name": "Grand Prairie",
+      "path": "grandprairie.json",
+      "contract_count": 8,
+      "total_value_usd": 4888170.9,
+      "date_range": {
+        "min": "2026-03-03",
+        "max": "2026-03-26"
+      },
+      "last_modified": "2026-04-27T11:29:27-05:00",
+      "size_bytes": 4562,
+      "status": "ok"
+    },
+    {
+      "slug": "prosper",
+      "name": "Prosper",
+      "path": null,
+      "status": "disabled",
+      "reason": "enabled=false in cities_config.json"
+    }
+  ]
+}
