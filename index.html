@@ -173,31 +173,20 @@ body {
 }
 #btn-export-pdf:hover { background: var(--seafoam); color: var(--white); }
 
-/* Header data-freshness pill — reads STATE.lastModified.
-   Sits next to the Refresh button in the top right of the nav. */
-.nav-freshness-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border: 1px solid rgba(255,255,255,.25);
-  border-radius: 999px;
-  font-size: 11px;
+/* Version badge — sits at the very right edge of the nav, after the
+   export buttons. Subtle by design — it's a build sanity check, not
+   a feature label. */
+.nav-version {
+  font-size: 10px;
   font-weight: 600;
-  color: var(--mint);
-  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.5);
+  letter-spacing: .5px;
+  margin-left: 12px;
   white-space: nowrap;
-  font-family: 'Public Sans', Arial, sans-serif;
-  letter-spacing: .2px;
+  font-variant-numeric: tabular-nums;
+  cursor: default;
 }
-.nav-freshness-pill::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--seafoam);
-}
-.nav-freshness-pill.stale::before { background: var(--salmon); }
+.nav-version:hover { color: rgba(255,255,255,.85); }
 
 #btn-refresh-data {
   background: transparent;
@@ -655,9 +644,16 @@ body {
 .banner.warn { background: #FFF3CD; color: #856404; border: 1px solid #FFECB5; display: block; }
 
 /* ======================================================================
-   KPI CARDS
+   KPI CARDS — B1 redo: hidden. The 4 totals are now inline on the
+   left side of the combined stats bar (#halff-kpi). Keeping the
+   <div id="kpi-row"> + 4 .kpi-card children in the DOM so the
+   existing updateKPIs() ID writes (kpi-contracts / kpi-value / etc.)
+   don't error.
 ====================================================================== */
 #kpi-row {
+  display: none;
+}
+#kpi-row.legacy-show {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 16px;
@@ -863,6 +859,37 @@ body {
   white-space: nowrap;
 }
 .btn-export-chart:hover { border-color: var(--seafoam); color: var(--blue); }
+
+/* Chart granularity toggle buttons (Annual / Quarterly) — used on
+   the Over Time and YoY charts. Restored after the unification rolled
+   them back; the JS wiring (renderOverTime, renderYoY) already exists.  */
+.chart-toggle-group {
+  display: inline-flex;
+  gap: 0;
+  border: 1px solid var(--cool-gray);
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+.chart-toggle-btn {
+  background: var(--white);
+  border: none;
+  color: var(--seafoam);
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: 'Public Sans', Arial, sans-serif;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+  white-space: nowrap;
+}
+.chart-toggle-btn + .chart-toggle-btn { border-left: 1px solid var(--cool-gray); }
+.chart-toggle-btn:hover { background: var(--bg); color: var(--blue); }
+.chart-toggle-btn.active {
+  background: var(--blue);
+  color: var(--white);
+}
 
 /* Top-N segmented pill toggle (Market Share Evolution chart header).
    Pair of buttons sharing one rounded outline. Active state = filled
@@ -1241,6 +1268,9 @@ body.chart-expanded { overflow: hidden; }
   margin-left: 6px;
   font-size: 11px;
 }
+/* Combined market totals + Halff stats bar (B1 redo). The card always
+   renders so the 4 totals are visible; the halff-stats portion shows
+   only when Halff has contracts in the current filter. */
 .halff-kpi-card {
   background: var(--white);
   border-radius: var(--radius);
@@ -1270,6 +1300,24 @@ body.chart-expanded { overflow: hidden; }
   object-fit: contain;
 }
 .halff-kpi-body { display: flex; gap: 24px; align-items: center; flex-wrap: wrap; flex: 1; }
+
+/* B1 redo combined-bar: market totals on left, divider, halff stats on right */
+.stats-totals,
+.stats-halff {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  flex-wrap: wrap;
+}
+.stats-totals { flex: 0 0 auto; }
+.stats-halff { flex: 1 1 auto; gap: 22px; }
+.stats-divider {
+  width: 1px;
+  align-self: stretch;
+  background: var(--cool-gray);
+  margin: 4px 8px;
+}
+
 .halff-kpi-stat {
   display: flex;
   flex-direction: column;
@@ -2208,9 +2256,6 @@ body.custom-build-mode .map-card #map-expand-btn {
   </div>
 
   <button id="btn-custom-build" style="background:transparent;border:1px solid rgba(255,255,255,.3);color:var(--white);padding:6px 12px;border-radius:4px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;margin-right:6px;" title="Build a custom view with selected charts">+ Build View</button>
-  <span class="nav-freshness-pill" id="nav-freshness-pill" title="Time of the most recent processing run on disk">
-    Last updated: <span id="nav-freshness-text">—</span>
-  </span>
   <button id="btn-refresh-data" type="button" title="Re-fetch dashboard data from the server (no full reload)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
       <polyline points="23 4 23 10 17 10"></polyline>
@@ -2221,6 +2266,7 @@ body.custom-build-mode .map-card #map-expand-btn {
   </button>
   <button id="btn-export-csv">Export CSV</button>
   <button id="btn-export-pdf">Export PDF</button>
+  <span class="nav-version" id="nav-version" title="Build version">&mdash;</span>
 </nav>
 
 <!-- ================================================================
@@ -2416,10 +2462,41 @@ body.custom-build-mode .map-card #map-expand-btn {
     </div>
   </div>
 
-  <!-- Halff KPI Callout -->
-  <div class="halff-kpi-card" id="halff-kpi" style="display:none;">
-    <div class="halff-kpi-icon"><img src="assets/halff_icon.png" alt="Halff"></div>
-    <div class="halff-kpi-body">
+  <!-- On-call / master-services panel awards banner. Click to expand
+       the list. Populated from STATE.onCallLog at finalize time; rows
+       with is_oncall=true skip the contract count and live here instead. -->
+  <div id="oncall-banner" style="display:none; background:rgba(17,94,107,.05); border:1px solid rgba(17,94,107,.18); border-left:4px solid var(--teal); border-radius:var(--radius); padding:8px 14px; margin-bottom:16px; font-size:11px; color:var(--dark); cursor:pointer;" onclick="this.querySelector('.oncall-details').style.display=this.querySelector('.oncall-details').style.display==='none'?'block':'none'">
+    <span style="font-weight:700; color:var(--teal);">&#9432; On-call panel awards</span>
+    <span id="oncall-count"></span> &mdash; RFQ-shortlist / as-needed placements, not counted as contracts. Click for the list.
+    <div class="oncall-details" style="display:none; margin-top:6px; padding-top:6px; border-top:1px solid rgba(17,94,107,.18); font-size:10px; color:var(--seafoam); line-height:1.6;" id="oncall-details"></div>
+  </div>
+
+  <!-- Combined stats bar: 4 market totals on the left | divider | Halff
+       callout on the right. Replaces the separate big KPI cards (now
+       hidden via #kpi-row { display:none } in CSS) and the standalone
+       Halff bar. Single visual element keeps the page tighter. -->
+  <div class="halff-kpi-card" id="halff-kpi">
+    <div class="stats-totals">
+      <div class="halff-kpi-stat">
+        <span class="halff-kpi-stat-value" id="bar-contracts">--</span>
+        <span class="halff-kpi-stat-label">Total Contracts</span>
+      </div>
+      <div class="halff-kpi-stat">
+        <span class="halff-kpi-stat-value" id="bar-value">--</span>
+        <span class="halff-kpi-stat-label">Total Value</span>
+      </div>
+      <div class="halff-kpi-stat">
+        <span class="halff-kpi-stat-value" id="bar-cities">--</span>
+        <span class="halff-kpi-stat-label">Cities</span>
+      </div>
+      <div class="halff-kpi-stat">
+        <span class="halff-kpi-stat-value" id="bar-consultants">--</span>
+        <span class="halff-kpi-stat-label">Consultants</span>
+      </div>
+    </div>
+    <div class="stats-divider" aria-hidden="true"></div>
+    <div class="stats-halff" id="stats-halff" style="display:none;">
+      <div class="halff-kpi-icon"><img src="assets/halff_icon.png" alt="Halff"></div>
       <span class="halff-kpi-title">halff</span>
       <div class="halff-kpi-stat">
         <span class="halff-kpi-stat-value" id="halff-rank">--</span>
@@ -2472,7 +2549,11 @@ body.custom-build-mode .map-card #map-expand-btn {
         <div class="chart-header">
           <div>
             <div class="chart-title">Contract Value Over Time</div>
-            <div class="chart-subtitle">Quarterly investment trend &middot; top 5 categories</div>
+            <div class="chart-subtitle">Investment trend &middot; top 5 categories</div>
+          </div>
+          <div class="chart-toggle-group" role="group" aria-label="Granularity">
+            <button type="button" class="chart-toggle-btn overtime-granularity-btn active" data-granularity="year">Annual</button>
+            <button type="button" class="chart-toggle-btn overtime-granularity-btn" data-granularity="quarter">Quarterly</button>
           </div>
         </div>
         <div class="chart-wrap"><canvas id="chartOverTime"></canvas></div>
@@ -2524,18 +2605,16 @@ body.custom-build-mode .map-card #map-expand-btn {
         <div class="chart-wrap" style="position:relative;"><canvas id="chartScatter"></canvas></div>
       </div>
 
-      <!-- Chart 5: Heatmap (full width) -->
-      <div class="chart-card chart-full">
+      <!-- Chart 8: New vs Repeat — moved here from Trends. The market-entry
+           question ("is incumbency hardening?") is a competitive view. -->
+      <div class="chart-card">
         <div class="chart-header">
           <div>
-            <div class="chart-title">Category Heatmap by City</div>
-            <div class="chart-subtitle">Where each city spends &mdash; darker = higher investment &middot; sorted by total</div>
+            <div class="chart-title">New vs Repeat Consultants<span class="info-tip" tabindex="0">i<span class="info-tip-body"><strong>New:</strong> a firm whose first-ever contract in the filtered dataset falls in that year &mdash; i.e. a firm no city in this dataset had previously awarded work to.<br><br><strong>Repeat:</strong> a firm that received a contract in an earlier year and is receiving another one now. Once a firm is "new" in a given year, it's counted as "repeat" for every subsequent year.<br><br>Each contract is counted (not each unique firm), so a firm with multiple contracts in its debut year adds multiple to "new".</span></span></div>
+            <div class="chart-subtitle">How many contracts go to new entrants vs returning firms each year</div>
           </div>
-          <button class="btn-export-chart" data-export="heatmap-csv">CSV</button>
         </div>
-        <div id="heatmap-wrap">
-          <table id="heatmap-table"></table>
-        </div>
+        <div class="chart-wrap"><canvas id="chartNewRepeat"></canvas></div>
       </div>
 
       <!-- Section: Trends & Growth -->
@@ -2562,33 +2641,15 @@ body.custom-build-mode .map-card #map-expand-btn {
       <div class="chart-card chart-compact">
         <div class="chart-header">
           <div>
-            <div class="chart-title">Annual Contract Value (YoY)</div>
-            <div class="chart-subtitle">Total awarded per year &middot; striped segment = projection for in-progress year</div>
+            <div class="chart-title" id="yoy-chart-title">Annual Contract Value (YoY)</div>
+            <div class="chart-subtitle" id="yoy-chart-subtitle">Total awarded per year &middot; striped segment = projection for in-progress year</div>
+          </div>
+          <div class="chart-toggle-group" role="group" aria-label="Granularity">
+            <button type="button" class="chart-toggle-btn yoy-granularity-btn active" data-granularity="year">Annual</button>
+            <button type="button" class="chart-toggle-btn yoy-granularity-btn" data-granularity="quarter">Quarterly</button>
           </div>
         </div>
         <div class="chart-wrap"><canvas id="chartYoY"></canvas></div>
-      </div>
-
-      <!-- Chart 8: New vs Repeat -->
-      <div class="chart-card">
-        <div class="chart-header">
-          <div>
-            <div class="chart-title">New vs Repeat Consultants<span class="info-tip" tabindex="0">i<span class="info-tip-body"><strong>New:</strong> a firm whose first-ever contract in the filtered dataset falls in that year &mdash; i.e. a firm no city in this dataset had previously awarded work to.<br><br><strong>Repeat:</strong> a firm that received a contract in an earlier year and is receiving another one now. Once a firm is "new" in a given year, it's counted as "repeat" for every subsequent year.<br><br>Each contract is counted (not each unique firm), so a firm with multiple contracts in its debut year adds multiple to "new".</span></span></div>
-            <div class="chart-subtitle">How many contracts go to new entrants vs returning firms each year</div>
-          </div>
-        </div>
-        <div class="chart-wrap"><canvas id="chartNewRepeat"></canvas></div>
-      </div>
-
-      <!-- Chart 10: Contract Size Distribution -->
-      <div class="chart-card">
-        <div class="chart-header">
-          <div>
-            <div class="chart-title">Contract Size Distribution</div>
-            <div class="chart-subtitle">Most contracts cluster in smaller ranges &mdash; where does the sweet spot lie?</div>
-          </div>
-        </div>
-        <div class="chart-wrap"><canvas id="chartSizeDist"></canvas></div>
       </div>
 
       <!-- Chart: City Quarterly Award Tracker -->
@@ -2608,8 +2669,10 @@ body.custom-build-mode .map-card #map-expand-btn {
         <p>Top firms' share evolution and cumulative investment trajectory</p>
       </div>
 
-      <!-- Chart 11: Consultant Market Share Evolution -->
-      <div class="chart-card chart-full" id="card-market-share">
+      <!-- Chart 11: Consultant Market Share Evolution. B4: half-width
+           so it pairs on the same row with the Cumulative Spend Curve
+           below — was full-width which crowded the section. -->
+      <div class="chart-card" id="card-market-share">
         <div class="chart-header">
           <div>
             <div class="chart-title" id="chartMarketShare-title">Top 5 Market Share Evolution</div>
@@ -2634,6 +2697,19 @@ body.custom-build-mode .map-card #map-expand-btn {
         <div class="chart-wrap"><canvas id="chartCumSpend"></canvas></div>
       </div>
 
+      <!-- Chart 10: Contract Size Distribution — moved here from Trends.
+           Where dollars cluster across deals is a market-shape question
+           that pairs with share + cumulative on this section's narrative. -->
+      <div class="chart-card chart-full">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Contract Size Distribution</div>
+            <div class="chart-subtitle">Most contracts cluster in smaller ranges &mdash; where does the sweet spot lie?</div>
+          </div>
+        </div>
+        <div class="chart-wrap"><canvas id="chartSizeDist"></canvas></div>
+      </div>
+
       <!-- Section: Contract Detail -->
       <div class="chart-section-header" id="section-detail">
         <h3>Contract Detail</h3>
@@ -2651,6 +2727,22 @@ body.custom-build-mode .map-card #map-expand-btn {
         </div>
         <div id="top-contracts-wrap">
           <table id="top-contracts-table"></table>
+        </div>
+      </div>
+
+      <!-- Chart 5: Category Heatmap by City — moved here from Competitive
+           Analysis. It's a city × category cross-tab, more useful as
+           drill-down detail than as a top-of-page competitive view. -->
+      <div class="chart-card chart-full">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Category Heatmap by City</div>
+            <div class="chart-subtitle">Where each city spends &mdash; darker = higher investment &middot; sorted by total</div>
+          </div>
+          <button class="btn-export-chart" data-export="heatmap-csv">CSV</button>
+        </div>
+        <div id="heatmap-wrap">
+          <table id="heatmap-table"></table>
         </div>
       </div>
 
@@ -3000,10 +3092,27 @@ function escHtml(str) {
 function fmtMoney(n) {
   if (n == null || isNaN(n)) return '$0';
   const abs = Math.abs(n);
-  if (abs >= 1e9) return '$' + (n / 1e9).toFixed(1) + 'B';
-  if (abs >= 1e6) return '$' + (n / 1e6).toFixed(1) + 'M';
+  // Strip trailing ".0" on round numbers (so axis ticks show "$50M" not
+  // "$50.0M"). Keep one decimal for non-round values ("$2.4M").
+  function trim(v, suffix) {
+    var s = v.toFixed(1);
+    if (s.endsWith('.0')) s = s.slice(0, -2);
+    return '$' + s + suffix;
+  }
+  if (abs >= 1e9) return trim(n / 1e9, 'B');
+  if (abs >= 1e6) return trim(n / 1e6, 'M');
   if (abs >= 1e3) return '$' + (n / 1e3).toFixed(0) + 'K';
   return '$' + Math.round(n).toLocaleString();
+}
+
+// fmtPct: percentage with one decimal, but drop the trailing ".0" on
+// whole numbers so YoY tooltips show "+5%" instead of "+5.0%".
+function fmtPct(n, opts) {
+  if (n == null || isNaN(n)) return '0%';
+  var s = Number(n).toFixed(1);
+  if (s.endsWith('.0')) s = s.slice(0, -2);
+  if (opts && opts.signed && Number(n) > 0) s = '+' + s;
+  return s + '%';
 }
 
 function fmtMoneyFull(n) {
@@ -3230,11 +3339,26 @@ function loadContractData() {
         if (info && info.count > 1 && i !== info.bestIdx) { dedupLog.push(r); return false; }
         return true;
       });
-      // Pass C — drop $0 ghosts
+      // Pass C — drop $0 ghosts. is_oncall rows escape this drop because
+      // they're legitimate on-call/master-services awards with no committed
+      // dollar amount. They get pulled into STATE.onCallAwards below for
+      // the on-call banner instead of polluting the contract counts.
+      var oncallLog = [];
+      STATE.onCallAwards = [];
       contracts = contracts.filter(function(r) {
+        if (r.is_oncall) {
+          STATE.onCallAwards.push(r);
+          oncallLog.push(
+            '<b>On-call panel:</b> ' + (r.company || '?') +
+            ' — ' + (r.project || '').substring(0, 60) +
+            ' <i>(' + (r.city || '?') + ')</i>'
+          );
+          return false;
+        }
         if ((r.amount || 0) === 0) { dedupLog.push(r); return false; }
         return true;
       });
+      STATE.onCallLog = oncallLog;
 
       STATE.allData = contracts;
       STATE.filesLoaded = okCities.length;
@@ -4234,42 +4358,39 @@ function finalizeDashboard() {
   // Wire up the PM Intelligence password gate (also idempotent).
   initPmIntelligenceGate();
 
-  // Update the header freshness pill + ensure the refresh button is wired.
-  updateFreshnessPill();
+  // Wire the refresh button + nav version badge. The freshness timestamp
+  // lives in the footer ("Latest processing: <date>") — see updateFooter().
   initRefreshButton();
+  updateNavVersion();
+
+  // Reveal the on-call banner if any rows were flagged is_oncall during load.
+  if (STATE.onCallLog && STATE.onCallLog.length > 0) {
+    var ocb = document.getElementById('oncall-banner');
+    var occ = document.getElementById('oncall-count');
+    var ocd = document.getElementById('oncall-details');
+    if (ocb) {
+      ocb.style.display = '';
+      if (occ) occ.textContent = ' (' + STATE.onCallLog.length + ')';
+      if (ocd) ocd.innerHTML = STATE.onCallLog.join('<br>');
+    }
+  }
 
   console.log('Dashboard initialized with ' + STATE.allData.length + ' contracts from ' + STATE.allCities.length + ' cities');
 }
 
 /* ------------------------------------------------------------------
-   Header freshness pill — reads STATE.lastModified.
-
-   Same source of truth as the existing footer "Latest processing"
-   line, so the two surfaces cannot drift. Tinted salmon (.stale)
-   when the latest data is older than 14 days.
+   Nav version badge — reads window.APP_VERSION (from docs/version.js).
+   Subtle text in the top-right of the nav. Tooltip surfaces APP_BUILD.
 ------------------------------------------------------------------- */
-function updateFreshnessPill() {
-  var el = document.getElementById('nav-freshness-text');
-  var pill = document.getElementById('nav-freshness-pill');
-  if (!el || !pill) return;
-  if (!STATE.lastModified) {
-    el.textContent = '—';
-    pill.classList.remove('stale');
-    return;
+function updateNavVersion() {
+  var el = document.getElementById('nav-version');
+  if (!el) return;
+  if (window.APP_VERSION) {
+    el.textContent = 'v' + window.APP_VERSION;
+    if (window.APP_BUILD) el.title = 'Build ' + window.APP_BUILD;
+  } else {
+    el.textContent = '';
   }
-  var d = new Date(STATE.lastModified);
-  var fmt;
-  try {
-    fmt = new Intl.DateTimeFormat('en-US', {
-      year: 'numeric', month: 'short', day: 'numeric',
-      hour: 'numeric', minute: '2-digit'
-    }).format(d);
-  } catch (e) {
-    fmt = d.toLocaleString();
-  }
-  el.textContent = fmt;
-  var ageDays = (Date.now() - d.getTime()) / 86400000;
-  pill.classList.toggle('stale', ageDays > 14);
 }
 
 /* ------------------------------------------------------------------
@@ -4458,8 +4579,19 @@ function renderKPIs() {
   el('kpi-cities', cities.length.toLocaleString());
   el('kpi-consultants', consultants.length.toLocaleString());
 
-  // Halff KPI callout — always visible, shows "No data" when empty so user knows why
+  // B1 redo: combined-bar IDs (visible). The legacy kpi-* IDs above are
+  // still populated so other code (My View, custom-build mode) can read
+  // them, but the user-facing values now come from the bar-* group.
+  el('bar-contracts', totalContracts.toLocaleString());
+  el('bar-value', fmtMoney(totalValue));
+  el('bar-cities', cities.length.toLocaleString());
+  el('bar-consultants', consultants.length.toLocaleString());
+
+  // Halff portion of the combined bar — show only when Halff has
+  // contracts under the current filter; the totals on the left side
+  // remain visible regardless.
   const halffKpi = document.getElementById('halff-kpi');
+  const halffSection = document.getElementById('stats-halff');
   if (halffKpi) {
     const halffContracts = data.filter(r => isHalff(r.company));
     halffKpi.style.display = '';
@@ -4481,13 +4613,10 @@ function renderKPIs() {
       el('halff-share', mktShare + '%');
       el('halff-cities', halffCities.size + ' of ' + cities.length);
       halffKpi.classList.remove('halff-kpi-empty');
+      if (halffSection) halffSection.style.display = '';
     } else {
-      // Persist the banner but show zeros + an explanation so the user isn't confused
-      el('halff-rank', 'No data');
-      el('halff-awards', '0');
-      el('halff-value', '$0');
-      el('halff-share', '0%');
-      el('halff-cities', '0 of ' + cities.length);
+      // No Halff in current filter — hide just the right side; totals stay.
+      if (halffSection) halffSection.style.display = 'none';
       halffKpi.classList.add('halff-kpi-empty');
     }
   }
@@ -5227,8 +5356,8 @@ function renderOverTime() {
     return;
   }
 
-  // Granularity: user-toggleable (defaults to quarterly)
-  var granularity = STATE.overTimeGranularity || 'quarter';
+  // Granularity: user-toggleable (defaults to annual per B2 spec).
+  var granularity = STATE.overTimeGranularity || 'year';
 
   // Build time-bucket totals
   const bucketTotals = {};
@@ -5331,7 +5460,7 @@ function renderOverTime() {
       });
       renderOverTime();
     });
-    btn.classList.toggle('active', (btn.dataset.granularity || 'quarter') === granularity);
+    btn.classList.toggle('active', (btn.dataset.granularity || 'year') === granularity);
   });
 }
 
@@ -5738,15 +5867,35 @@ function _yoyGetHatchPattern(baseColor) {
 }
 
 function renderYoY() {
-  // Annual total contract value by year, with the in-progress year split
-  // into an actual-to-date segment (solid) plus a projected remainder
-  // (hatched). Projection uses YTD run-rate pro-rata over the year —
-  // deliberately simple for the first pass. A per-city-pacing-curve
-  // refinement is tracked separately.
+  // Two modes (B3 spec):
+  //   - 'year' (default): annual total contract value, with an in-progress
+  //     year split into actual-to-date (solid) + projected remainder
+  //     (hatched). Projection uses YTD run-rate pro-rata over the year.
+  //   - 'quarter': YoY % growth rate, comparing each quarter to the SAME
+  //     quarter the prior year (Q1-2026 vs Q1-2025 vs Q1-2024 …). NOT
+  //     sequential Q4->Q1 which would just be seasonality. The current
+  //     in-progress quarter is excluded so a partial period doesn't read
+  //     as a -70% crash against a complete prior period.
+  var mode = STATE.yoyGranularity || 'year';
+  var titleEl = document.getElementById('yoy-chart-title');
+  var subEl   = document.getElementById('yoy-chart-subtitle');
+  if (titleEl) titleEl.textContent = mode === 'quarter'
+    ? 'Quarterly YoY Growth Rate'
+    : 'Annual Contract Value (YoY)';
+  if (subEl) subEl.textContent = mode === 'quarter'
+    ? '% change vs same quarter prior year · current (in-progress) quarter excluded'
+    : 'Total awarded per year · striped segment = projection for in-progress year';
+
+  if (mode === 'quarter') {
+    _renderYoYQuarterly();
+    _wireYoYGranularityButtons(mode);
+    return;
+  }
+
   var withDates = STATE.filteredData.filter(function(r) {
     return r.date && r.amount;
   });
-  if (withDates.length === 0) { destroyChart('chartYoY'); return; }
+  if (withDates.length === 0) { destroyChart('chartYoY'); _wireYoYGranularityButtons(mode); return; }
 
   // Group contract $ by calendar year
   var byYear = {};
@@ -5758,7 +5907,7 @@ function renderYoY() {
     byYear[y] = (byYear[y] || 0) + (r.amount || 0);
   }
   var years = Object.keys(byYear).map(Number).sort(function(a, b) { return a - b; });
-  if (years.length === 0) { destroyChart('chartYoY'); return; }
+  if (years.length === 0) { destroyChart('chartYoY'); _wireYoYGranularityButtons(mode); return; }
 
   var now = new Date();
   var currYear = now.getFullYear();
@@ -5850,8 +5999,7 @@ function renderYoY() {
             if (!tt) return '';
             var lines = ['Total: ' + fmtMoney(tt.total)];
             if (tt.pct !== null) {
-              var dir = tt.pct >= 0 ? '+' : '';
-              lines.push('YoY: ' + dir + tt.pct.toFixed(1) + '%');
+              lines.push('YoY: ' + fmtPct(tt.pct, { signed: true }));
             }
             return lines.join('\n');
           },
@@ -5869,6 +6017,83 @@ function renderYoY() {
       }),
     },
   }));
+  _wireYoYGranularityButtons(mode);
+}
+
+// Quarterly YoY growth rate: each quarter vs same quarter prior year.
+function _renderYoYQuarterly() {
+  var withDates = STATE.filteredData.filter(function(r) { return r.date && r.amount; });
+  if (withDates.length === 0) { destroyChart('chartYoY'); return; }
+
+  var byYQ = {};
+  for (var i = 0; i < withDates.length; i++) {
+    var r = withDates[i];
+    var d = r.date instanceof Date ? r.date : new Date(r.date);
+    if (isNaN(d.getTime())) continue;
+    var q = Math.floor(d.getMonth() / 3) + 1;
+    var key = d.getFullYear() + '-Q' + q;
+    byYQ[key] = (byYQ[key] || 0) + (r.amount || 0);
+  }
+
+  var now = new Date();
+  var currKey = now.getFullYear() + '-Q' + (Math.floor(now.getMonth() / 3) + 1);
+  var qKeys = Object.keys(byYQ).filter(function(k) { return k < currKey; }).sort();
+
+  var labels = [];
+  var values = [];
+  var colors = [];
+  qKeys.forEach(function(k) {
+    var year = parseInt(k.slice(0, 4), 10);
+    var qStr = k.slice(5);
+    var priorKey = (year - 1) + '-' + qStr;
+    var prev = byYQ[priorKey];
+    var curr = byYQ[k];
+    if (prev && prev > 0) {
+      var pct = ((curr - prev) / prev) * 100;
+      labels.push(k);
+      values.push(pct);
+      colors.push(pct >= 0 ? C.TEAL : C.SALMON);
+    }
+  });
+
+  if (labels.length === 0) { destroyChart('chartYoY'); return; }
+
+  makeChart('chartYoY', 'bar', {
+    labels: labels,
+    datasets: [{ data: values, backgroundColor: colors, borderRadius: 6 }],
+  }, Object.assign({}, CHART_DEFAULTS, {
+    plugins: Object.assign({}, CHART_DEFAULTS.plugins, {
+      legend: { display: false },
+      tooltip: Object.assign({}, CHART_DEFAULTS.plugins.tooltip, {
+        callbacks: {
+          label: function(ctx) { return fmtPct(ctx.raw, { signed: true }); },
+        },
+      }),
+    }),
+    scales: Object.assign({}, CHART_DEFAULTS.scales, {
+      y: Object.assign({}, CHART_DEFAULTS.scales.y, {
+        ticks: Object.assign({}, CHART_DEFAULTS.scales.y.ticks, {
+          callback: function(v) { return Math.round(v) + '%'; },
+        }),
+      }),
+    }),
+  }));
+}
+
+function _wireYoYGranularityButtons(mode) {
+  document.querySelectorAll('.yoy-granularity-btn').forEach(function(btn) {
+    if (!btn._wired) {
+      btn._wired = true;
+      btn.addEventListener('click', function() {
+        STATE.yoyGranularity = this.dataset.granularity;
+        document.querySelectorAll('.yoy-granularity-btn').forEach(function(b) {
+          b.classList.toggle('active', b.dataset.granularity === STATE.yoyGranularity);
+        });
+        renderYoY();
+      });
+    }
+    btn.classList.toggle('active', (btn.dataset.granularity || 'year') === mode);
+  });
 }
 
 /* ------------------------------------------------------------------
