@@ -1,5 +1,5 @@
 {
-  "generated": "2026-04-27T14:44:10-05:00",
+  "generated": "2026-04-27T14:57:05-05:00",
   "generator": "build_dashboard_data.py v2.27",
   "cities": [
     {
@@ -13,7 +13,7 @@
         "max": "2026-04-22"
       },
       "last_modified": "2026-04-27T13:46:57-05:00",
-      "size_bytes": 113922,
+      "size_bytes": 113926,
       "status": "ok"
     },
     {
@@ -21,69 +21,69 @@
       "name": "Fort Worth",
       "path": "fortworth.json",
       "contract_count": 480,
-      "total_value_usd": 403385459.87,
+      "total_value_usd": 400772975.87,
       "date_range": {
         "min": "2023-01-10",
         "max": "2026-03-31"
       },
-      "last_modified": "2026-04-27T14:44:03-05:00",
-      "size_bytes": 270674,
+      "last_modified": "2026-04-27T14:54:44-05:00",
+      "size_bytes": 271433,
       "status": "ok"
     },
     {
       "slug": "mckinney",
       "name": "McKinney",
       "path": "mckinney.json",
-      "contract_count": 55,
-      "total_value_usd": 32009429.0,
+      "contract_count": 54,
+      "total_value_usd": 28880329.0,
       "date_range": {
         "min": "2023-01-17",
         "max": "2026-04-07"
       },
       "last_modified": "2026-04-27T13:47:15-05:00",
-      "size_bytes": 29566,
+      "size_bytes": 29098,
       "status": "ok"
     },
     {
       "slug": "frisco",
       "name": "Frisco",
       "path": "frisco.json",
-      "contract_count": 96,
-      "total_value_usd": 66047824.87,
+      "contract_count": 95,
+      "total_value_usd": 61704874.87,
       "date_range": {
         "min": "2023-02-07",
         "max": "2026-03-17"
       },
       "last_modified": "2026-04-27T13:46:43-05:00",
-      "size_bytes": 69405,
+      "size_bytes": 68764,
       "status": "ok"
     },
     {
       "slug": "carrollton",
       "name": "Carrollton",
       "path": "carrollton.json",
-      "contract_count": 60,
-      "total_value_usd": 27483499.67,
+      "contract_count": 59,
+      "total_value_usd": 27232199.67,
       "date_range": {
         "min": "2023-01-24",
         "max": "2026-03-03"
       },
       "last_modified": "2026-04-27T13:46:46-05:00",
-      "size_bytes": 36469,
+      "size_bytes": 35994,
       "status": "ok"
     },
     {
       "slug": "celina",
       "name": "Celina",
       "path": "celina.json",
-      "contract_count": 120,
-      "total_value_usd": 42348570.04,
+      "contract_count": 119,
+      "total_value_usd": 42195970.04,
       "date_range": {
         "min": "2023-01-10",
         "max": "2026-04-14"
       },
       "last_modified": "2026-04-27T13:46:49-05:00",
-      "size_bytes": 69029,
+      "size_bytes": 68703,
       "status": "ok"
     },
     {
@@ -104,14 +104,14 @@
       "slug": "garland",
       "name": "Garland",
       "path": "garland.json",
-      "contract_count": 96,
-      "total_value_usd": 72103926.56,
+      "contract_count": 95,
+      "total_value_usd": 71603926.56,
       "date_range": {
         "min": "2023-01-10",
         "max": "2026-04-21"
       },
       "last_modified": "2026-04-27T13:46:53-05:00",
-      "size_bytes": 56042,
+      "size_bytes": 55375,
       "status": "ok"
     },
     {

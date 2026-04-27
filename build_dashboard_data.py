@@ -167,6 +167,48 @@ CATEGORY_PALETTE = {
 HALFF_ALIASES = ["halff associates", "halff"]
 
 
+# Consultant name aliases — map alternate spellings, abbreviations, and
+# acquired-firm pre-merger names to a single canonical form. Applied at
+# JSON-export time in read_city() so the dashboard's bar charts, doughnut,
+# and top-contracts table all reference one name per firm.
+#
+# Why each entry exists:
+#   - "FNI": Freese and Nichols' internal abbreviation. Some council
+#     documents use "FNI" in the action item even though the agreement
+#     is awarded to "Freese and Nichols, Inc." — without this alias the
+#     dashboard shows the firm under two names.
+#   - "TRC Engineers, Inc." → Carollo Engineers, Inc.: TRC was acquired
+#     by Carollo in March 2024. Contracts awarded after that point should
+#     read Carollo; rows still entered under TRC are an artifact of how
+#     the originating council document referenced the legacy name.
+#     Folding TRC → Carollo is the post-acquisition reality.
+#
+# Add new aliases here as you encounter them. Keys are matched case-
+# insensitively against the company text. Multiple alias forms can map
+# to the same canonical name (e.g. "FNI" and "Freese & Nichols, Inc.").
+CONSULTANT_ALIASES = {
+    # Freese and Nichols
+    "fni": "Freese and Nichols, Inc.",
+    "freese & nichols, inc.": "Freese and Nichols, Inc.",
+    "freese & nichols": "Freese and Nichols, Inc.",
+    # Carollo (TRC acquisition, March 2024)
+    "trc engineers, inc.": "Carollo Engineers, Inc.",
+    "trc engineers": "Carollo Engineers, Inc.",
+    "trc": "Carollo Engineers, Inc.",
+}
+
+
+def canonicalize_company(name: str) -> str:
+    """Map FNI / TRC / etc. to their canonical post-merger names.
+
+    Returns the original string when no alias applies.
+    """
+    if not name:
+        return name
+    key = name.strip().lower()
+    return CONSULTANT_ALIASES.get(key, name)
+
+
 # ── Row parsing helpers ─────────────────────────────────────────────────────
 
 
@@ -310,6 +352,8 @@ def read_city(slug: str, label: str, xlsx_path: str) -> list:
         year = row[0]
         date_val = parse_date(row[1])
         company = str(row[2]).strip() if row[2] else ""
+        # Apply alias map so FNI/TRC/etc. roll up to canonical names.
+        company = canonicalize_company(company)
         amount = row[3]
         project = str(row[4]).strip() if row[4] else ""
         proj_type = normalize_type(row[5])
@@ -393,6 +437,95 @@ def apply_filters(rows: list) -> tuple[list, dict]:
                 counts["drop_reasons"].get(reason_key, 0) + 1
             )
     return kept, counts
+
+
+# Stop words for content-word signature (mirrors excel_writer's set so the
+# JSON-level dedup behaves the same as the Excel-level pass).
+_JSON_DEDUP_STOP_WORDS = frozenset(
+    [
+        "the", "and", "for", "with", "from", "into", "that", "this", "these",
+        "those", "inc", "llc", "corp", "ltd", "co",
+        "project", "projects", "services", "service", "agreement", "contract",
+        "contracts", "engineering", "professional", "phase", "amendment",
+        "design", "consulting", "consultants", "associates", "city", "award",
+        "approve", "approval", "awarded", "approved", "authorize", "resolution",
+        "ordinance", "work", "scope", "program", "plan", "planning", "study",
+        "improvements", "improvement", "construction", "engineer", "engineers",
+    ]
+)
+
+
+def _content_signature(text: str, n: int = 5) -> tuple:
+    if not text:
+        return ()
+    tokens = re.findall(r"[a-z0-9]+", str(text).lower())
+    content = [t for t in tokens if len(t) > 3 and t not in _JSON_DEDUP_STOP_WORDS]
+    seen = list(dict.fromkeys(content))
+    return tuple(sorted(seen[:n]))
+
+
+def fuzzy_dedup_rows(rows: list, window_days: int = 90) -> tuple:
+    """JSON-level fuzzy dedup. Catches cases where two rows share the same
+    canonical company + amount bucket + project content words + city, within
+    a ±window_days date band.
+
+    Mirrors excel_writer._fuzzy_cross_sheet_dedup but operates on row dicts
+    (post-canonicalize_company), so it catches FNI/Freese, TRC/Carollo, and
+    other alias-driven duplicates that are dressed up under different firm
+    names in the source Excel.
+
+    Returns (kept_rows, removed_count).
+    """
+    if len(rows) < 2:
+        return rows, 0
+
+    # Build groups
+    groups: dict = {}
+    for idx, r in enumerate(rows):
+        amt = r.get("amount") or 0
+        if amt <= 0:
+            continue  # leave $0 / on-call alone
+        proj = r.get("project") or ""
+        # Skip amendments — they're legitimate new contract actions that
+        # happen to share firm + project text.
+        proj_lower = proj.lower()
+        if "amendment" in proj_lower or "change order" in proj_lower:
+            continue
+        date_str = r.get("date") or ""
+        try:
+            from datetime import datetime as _dt
+            dt = _dt.strptime(date_str, "%Y-%m-%d") if date_str else None
+        except ValueError:
+            dt = None
+        if dt is None:
+            continue
+        sig = (
+            (r.get("company") or "").strip().lower(),
+            int(round(amt / 1000.0)) * 1000,
+            _content_signature(proj),
+            (r.get("city") or "").strip().lower(),
+        )
+        groups.setdefault(sig, []).append({"idx": idx, "date": dt})
+
+    # Collapse each group greedy: keep the latest, drop earlier rows within window
+    drop_idxs = set()
+    for sig, members in groups.items():
+        if len(members) < 2:
+            continue
+        members.sort(key=lambda m: m["date"])
+        # Walk backward, keeping the latest. Drop earlier rows within ±window_days.
+        kept_dates = [members[-1]["date"]]
+        for m in reversed(members[:-1]):
+            nearest_kept = min(kept_dates, key=lambda d: abs((d - m["date"]).days))
+            if abs((nearest_kept - m["date"]).days) <= window_days:
+                drop_idxs.add(m["idx"])
+            else:
+                kept_dates.append(m["date"])
+
+    if not drop_idxs:
+        return rows, 0
+    kept_rows = [r for i, r in enumerate(rows) if i not in drop_idxs]
+    return kept_rows, len(drop_idxs)
 
 
 def write_city_json(slug: str, label: str, rows: list, out_dir: str, xlsx_path: str) -> dict:
@@ -674,17 +807,29 @@ def main():
         try:
             raw = read_city(slug, label, xlsx_path)
             kept, counts = apply_filters(raw)
-            total_kept += counts.get("keep", 0)
-            total_dropped += counts.get("drop", 0)
+            # Fuzzy dedup AFTER classify-and-filter has run, so we operate
+            # on the canonicalized company names (FNI -> Freese and Nichols,
+            # TRC -> Carollo). Catches duplicates that the per-Excel-sheet
+            # fuzzy pass misses because the source rows are listed under
+            # different firm names.
+            kept, fuzzy_dropped = fuzzy_dedup_rows(kept)
+            total_kept += counts.get("keep", 0) - fuzzy_dropped
+            total_dropped += counts.get("drop", 0) + fuzzy_dropped
             total_review += counts.get("review", 0)
             for k, v in counts.get("drop_reasons", {}).items():
                 cross_city_drop_reasons[k] = cross_city_drop_reasons.get(k, 0) + v
+            if fuzzy_dropped:
+                cross_city_drop_reasons["fuzzy_alias_dedup"] = (
+                    cross_city_drop_reasons.get("fuzzy_alias_dedup", 0) + fuzzy_dropped
+                )
             all_kept_rows.extend(kept)
             entry = write_city_json(slug, label, kept, OUTPUT_DIR, xlsx_path)
             manifest_entries.append(entry)
             summary = f"{entry['contract_count']:4d} contracts"
             if counts.get("drop"):
                 summary += f"  ({counts['drop']} dropped)"
+            if fuzzy_dropped:
+                summary += f"  ({fuzzy_dropped} alias-deduped)"
             if counts.get("review"):
                 summary += f"  ({counts['review']} to review)"
             print(f"  OK   {label:20s} {summary}")

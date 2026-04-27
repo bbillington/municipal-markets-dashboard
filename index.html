@@ -1871,6 +1871,27 @@ body.custom-build-mode .map-card #map-expand-btn {
   height: calc(100vh - 140px) !important;
 }
 
+/* When the map is expanded, lift the toggle buttons (Boundaries/Circles,
+   Value/Contracts) out of the cramped chart-header and float them as a
+   pair of FABs in the bottom-right corner of the expanded card so they
+   stay reachable over the larger map. */
+.map-card.map-expanded .chart-header > div:last-child {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 12px rgba(0,0,0,.18), 0 1px 3px rgba(0,0,0,.1);
+  padding: 8px 10px;
+  z-index: 1600;
+  flex-direction: column;
+  gap: 6px;
+  align-items: stretch;
+}
+.map-card.map-expanded .map-toggle-row {
+  display: inline-flex;
+}
+
 /* ======================================================================
    TOAST NOTIFICATIONS
 ====================================================================== */
@@ -2081,12 +2102,20 @@ body.custom-build-mode .map-card #map-expand-btn {
   top: calc(var(--nav-h) + 58px);
   z-index: 50;
   overflow: hidden;
-  /* Jump-To target offset. Matches the sticky `top` (nav + 58px filter bar)
-     plus a 72px clearance so the previous section header gets pushed
-     fully out when the user clicks a quick-nav pill. The 90px we had
-     before wasn't enough — the previous section's sticky banner kept
-     bleeding above the new one. */
-  scroll-margin-top: calc(var(--nav-h) + 130px);
+  /* scroll-margin-top: only used as a fallback. The real Jump-To offset
+     is computed in JS (initSectionNavScroll) which measures the actual
+     filter-bar height at click time and uses window.scrollTo() —
+     reliable when sticky stacking confuses the native hash-scroll. */
+  scroll-margin-top: calc(var(--nav-h) + 80px);
+}
+
+/* Hide sticky section headers while the map card is expanded — they
+   were bleeding ABOVE the fullscreen map because their sticky position
+   sits in the document above the map's fixed-position layer. Section
+   headers are 1500-z-index'd at 50 (lower than the map's 1500), but
+   in practice the sticky stacking context allows them to ride above. */
+body.map-expanded .chart-section-header {
+  display: none !important;
 }
 .chart-section-header::before {
   content: '';
@@ -4371,6 +4400,9 @@ function finalizeDashboard() {
   // Wire up the PM Intelligence password gate (also idempotent).
   initPmIntelligenceGate();
 
+  // Wire up smooth-scroll JUMP TO behavior (idempotent).
+  initSectionNavScroll();
+
   // Wire the refresh button + nav version badge. The freshness timestamp
   // lives in the footer ("Latest processing: <date>") — see updateFooter().
   initRefreshButton();
@@ -4389,6 +4421,44 @@ function finalizeDashboard() {
   }
 
   console.log('Dashboard initialized with ' + STATE.allData.length + ' contracts from ' + STATE.allCities.length + ' cities');
+}
+
+/* ------------------------------------------------------------------
+   JUMP TO — smooth scroll to the requested section header, with the
+   target landing just below the actual filter-bar bottom. Native hash
+   navigation was unreliable because the section headers are sticky:
+   the browser's "scroll target into view" landed at scroll-margin-top,
+   which didn't always match the sticky lock, leaving the previous
+   section's header bleeding above (or the new target landing too low
+   below the filter bar). This JS measures the filter bar at click
+   time and scrolls so the target's top sits 8px below it.
+------------------------------------------------------------------- */
+function initSectionNavScroll() {
+  var btns = document.querySelectorAll('.section-nav-btn[href^="#"]');
+  btns.forEach(function(btn) {
+    if (btn._navScrollWired) return;
+    btn._navScrollWired = true;
+    btn.addEventListener('click', function(e) {
+      var hash = btn.getAttribute('href') || '';
+      if (!hash || hash.charAt(0) !== '#') return;
+      var target = document.getElementById(hash.slice(1));
+      if (!target) return;
+      e.preventDefault();
+      var fb = document.querySelector('.filter-bar');
+      var nav = document.getElementById('nav');
+      var fbBottom = fb ? fb.getBoundingClientRect().bottom : 0;
+      // The sticky filter bar's bottom (relative to viewport) is where
+      // section headers stick. Measure NOW so we adapt to current
+      // wrapping (filter bar can grow taller when the consultant
+      // dropdown is open or section-nav wraps).
+      var navHeight = nav ? nav.getBoundingClientRect().height : 56;
+      var stickyOffset = Math.max(navHeight, fbBottom);
+      var targetY = target.getBoundingClientRect().top + window.scrollY - stickyOffset - 8;
+      window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
+      // Update history without triggering native hash-jump.
+      try { history.replaceState(null, '', hash); } catch (err) {}
+    });
+  });
 }
 
 /* ------------------------------------------------------------------
@@ -6767,10 +6837,12 @@ function initMap() {
     expandBtn.addEventListener('click', function() {
       var card = document.querySelector('.map-card');
       if (!card) return;
-      card.classList.toggle('map-expanded');
-      expandBtn.innerHTML = card.classList.contains('map-expanded')
-        ? '&#x2715; Close'
-        : '&#x26F6; Expand';
+      var nowExpanded = !card.classList.contains('map-expanded');
+      card.classList.toggle('map-expanded', nowExpanded);
+      // Mirror onto body so CSS can hide sticky section headers (which
+      // would otherwise bleed above the fullscreen map).
+      document.body.classList.toggle('map-expanded', nowExpanded);
+      expandBtn.innerHTML = nowExpanded ? '&#x2715; Close' : '&#x26F6; Expand';
       // Let Leaflet resize to new container
       setTimeout(function() { STATE.map.invalidateSize(); }, 50);
     });
