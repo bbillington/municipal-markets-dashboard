@@ -64,6 +64,15 @@ MIN_YEAR = 2023
 
 # ── Project-type normalization (matches dashboard category palette below) ───
 TYPE_MAP = {
+    "drainage / floodplain / stormwater": "Drainage",
+    "drainage/floodplain/stormwater": "Drainage",
+    "floodplain": "Drainage",
+    "stormwater": "Drainage",
+    "flood mitigation": "Drainage",
+    "hydraulic": "Drainage",
+    "hydrology": "Drainage",
+    "hydrologic": "Drainage",
+    "h&h": "Drainage",
     "roads": "Roadway",
     "road": "Roadway",
     "roadway": "Roadway",
@@ -147,6 +156,82 @@ def normalize_type(raw):
     return str(raw).strip().title()
 
 
+# Drainage keyword override patterns. Used by reclassify_drainage() below to
+# correct rows the upstream extractor (or human Excel entry) coded as
+# "Planning / Study", "On-Call", or "Unknown" when the project name makes
+# it obvious the work is drainage / floodplain / stormwater. Keep the
+# pattern list specific — generic "stream" matches sweep in roadways.
+_DRAINAGE_PROJECT_PATTERNS = (
+    "flood mitigation",
+    "flood study",
+    "floodplain",
+    "drainage and floodplain",
+    "drainage study",
+    "drainage master",
+    "drainage improvement",
+    "drainage engineering",
+    "drainage design",
+    "drainage relief",
+    "drainage system",
+    "stormwater",
+    "storm water",
+    "storm drain ",  # trailing space distinguishes from "storm drainage"
+    "storm drainage",
+    "detention pond",
+    "stream restoration",
+    "channel improvement",
+    "channel design",
+    "fema floodplain",
+    "fema flood",
+    "stream stabilization",
+    "creek mitigation",
+    "creek flood",
+    # Hydraulic / hydrologic / H&H — these almost always indicate drainage
+    # work in this dataset (flood-routing models, runoff calcs, etc.).
+    "h&h study",
+    "h & h study",
+    "h&h analysis",
+    "hydraulic",
+    "hydrology",
+    "hydrologic",
+    "hydrologics",
+    "hydraulics",
+)
+
+# Source categories that may be over-applied. We only override these — never
+# touch a row already coded Roadway, Water/Wastewater, Parks, etc., where
+# drainage is incidental rather than the primary scope.
+_DRAINAGE_OVERRIDE_FROM = {"Planning / Study", "On-Call", "Unknown", "Other Engineering"}
+
+
+def reclassify_drainage(current_type: str, project: str, notes: str = "") -> str:
+    """If a row's project NAME clearly identifies drainage / floodplain /
+    stormwater work AND the current type is a generic catch-all (planning,
+    on-call, unknown), return 'Drainage'. Otherwise return the current type
+    unchanged.
+
+    Only the project NAME is matched — notes often describe accessory work
+    ("street reconstruction including drainage and utility upgrades") that
+    would over-promote rows that are primarily roads or utilities.
+
+    The override is conservative on purpose:
+      - Won't promote Roadway → Drainage (a road project with a culvert is
+        still primarily a road).
+      - Won't promote Water / Wastewater → Drainage (cities legitimately
+        bundle storm drain work into utility contracts).
+      - Will promote Planning / Study → Drainage when a flood study or
+        floodplain review was generic-coded as planning.
+    """
+    del notes  # intentionally unused — see docstring
+    if current_type not in _DRAINAGE_OVERRIDE_FROM:
+        return current_type
+    name = (project or "").lower()
+    for pat in _DRAINAGE_PROJECT_PATTERNS:
+        if pat in name:
+            return "Drainage"
+    return current_type
+
+
 def parse_date(val):
     """Convert Excel date value to ISO string."""
     if val is None:
@@ -193,6 +278,9 @@ def read_city(slug: str, label: str, xlsx_path: str) -> list:
         proj_type = normalize_type(row[5])
         limits = str(row[6]).strip() if row[6] else ""
         notes = str(row[7]).strip() if row[7] else ""
+        # Promote drainage / floodplain / stormwater / hydraulic-hydrologic
+        # work that was generic-coded as planning / on-call / unknown.
+        proj_type = reclassify_drainage(proj_type, project, notes)
         pm_name = str(row[8]).strip() if has_pm and len(row) > 8 and row[8] else ""
         src_file = (
             str(row[8 + pm_off]).strip()
