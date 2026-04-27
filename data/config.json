@@ -1,14 +1,14 @@
 {
-  "generated": "2026-04-27T14:19:53-05:00",
+  "generated": "2026-04-27T14:29:03-05:00",
   "halff_aliases": [
     "halff associates",
     "halff"
   ],
   "categories": {
     "palette": {
-      "Roadway": "#1C355E",
+      "Roadway": "#FC6758",
       "Water / Wastewater": "#115E6B",
-      "Drainage": "#FC6758",
+      "Drainage": "#1C355E",
       "Planning / Study": "#68949E",
       "Park / Trail": "#2E7D32",
       "Traffic & Signals": "#E08E45",

@@ -135,12 +135,12 @@ TYPE_MAP = {
 # Env = brick, Bridge = slate, On-Call = warm gray. No two slices share a
 # hex; the catch-all buckets (Other / Unknown) get the cool grays.
 CATEGORY_PALETTE = {
-    "Roadway":                 "#1C355E",  # Halff Blue
-    "Water / Wastewater":      "#115E6B",  # Halff Teal
-    "Drainage":                "#FC6758",  # Halff Salmon — high-contrast major practice
+    "Roadway":                 "#FC6758",  # Halff Salmon — warm contrast for major bucket
+    "Water / Wastewater":      "#115E6B",  # Halff Teal (water = blue family)
+    "Drainage":                "#1C355E",  # Halff Blue (drainage = water = blue, per Brent)
     "Planning / Study":        "#68949E",  # Halff Seafoam
-    "Park / Trail":            "#2E7D32",  # Forest green
-    "Traffic & Signals":       "#E08E45",  # Warm orange
+    "Park / Trail":            "#2E7D32",  # Forest green (intuitive for parks)
+    "Traffic & Signals":       "#E08E45",  # Warm orange (intuitive for traffic)
     "Facilities":              "#7E3F8F",  # Plum
     "Construction Inspection": "#C28E0E",  # Mustard / gold
     "Survey & SUE":            "#5E4B8B",  # Purple
