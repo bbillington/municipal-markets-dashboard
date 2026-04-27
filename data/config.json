@@ -1,25 +1,25 @@
 {
-  "generated": "2026-04-27T14:29:03-05:00",
+  "generated": "2026-04-27T14:31:13-05:00",
   "halff_aliases": [
     "halff associates",
     "halff"
   ],
   "categories": {
     "palette": {
-      "Roadway": "#FC6758",
+      "Roadway": "#7E3F8F",
       "Water / Wastewater": "#115E6B",
       "Drainage": "#1C355E",
       "Planning / Study": "#68949E",
       "Park / Trail": "#2E7D32",
       "Traffic & Signals": "#E08E45",
-      "Facilities": "#7E3F8F",
+      "Facilities": "#8B7355",
       "Construction Inspection": "#C28E0E",
       "Survey & SUE": "#5E4B8B",
       "Technology & GIS": "#00A0B0",
       "Right of Way": "#97536A",
       "Environmental": "#9B3426",
       "Bridge / Structural": "#4A7A8A",
-      "On-Call": "#8B7355",
+      "On-Call": "#6B7280",
       "Other Engineering": "#B7CECD",
       "Unknown": "#D9DAE4"
     },
