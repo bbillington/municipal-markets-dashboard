@@ -23,7 +23,7 @@
      nav badge and footer text. Cache-bust query string is bumped on every
      release so a new APP_VERSION is picked up immediately even if the
      browser cached version.js from a prior visit. -->
-<script src="version.js?v=2.40"></script>
+<script src="version.js?v=2.41"></script>
 <!-- PDF export libraries -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
@@ -5022,9 +5022,9 @@ const CATEGORY_COLOR_MAP = {
 };
 // Fallback palette for anything new not in the map
 const CATEGORY_FALLBACK_PALETTE = [
-  '#1C355E', '#115E6B', '#68949E', '#FC6758', '#6F2740',
-  '#4A7A8A', '#3B5F7A', '#97536A', '#8AAFB6', '#B7CECD',
-  '#9B3426', '#7A8B3F', '#D19447', '#5E4B8B',
+  '#1C355E', '#115E6B', '#FC6758', '#68949E', '#2E7D32',
+  '#E08E45', '#7E3F8F', '#C28E0E', '#5E4B8B', '#00A0B0',
+  '#97536A', '#9B3426', '#4A7A8A', '#8B7355',
 ];
 function categoryColor(name) {
   if (!name) return '#999';

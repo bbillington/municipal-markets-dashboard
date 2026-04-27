@@ -120,23 +120,37 @@ TYPE_MAP = {
 
 # Category palette (category name → hex). Previously hardcoded in index.html;
 # now emitted via config.json so the dashboard consumes a single source.
+#
+# Dict insertion order also drives the chart-display order (see config["order"]
+# below — it's just `list(CATEGORY_PALETTE.keys())`). Drainage is intentionally
+# placed above Facilities because drainage is a major Halff practice and
+# should read as primary in the doughnut + heatmap + legend, not buried
+# below smaller buckets.
+#
+# Color choices: kept the Halff brand tones for the four largest buckets
+# (Blue / Teal / Salmon / Seafoam), then deliberately stepped away from the
+# brand-blue cluster for the rest — a doughnut with 7 shades of blue is
+# unreadable. Park = green (intuitive), Traffic = orange (intuitive),
+# Facilities = plum, CEI = mustard, Survey = purple, Tech = cyan, ROW = rose,
+# Env = brick, Bridge = slate, On-Call = warm gray. No two slices share a
+# hex; the catch-all buckets (Other / Unknown) get the cool grays.
 CATEGORY_PALETTE = {
-    "Roadway": "#1C355E",
-    "Water / Wastewater": "#115E6B",
-    "Planning / Study": "#68949E",
-    "Traffic & Signals": "#FC6758",
-    "Facilities": "#6F2740",
-    "Park / Trail": "#4A7A8A",
-    "Drainage": "#3B5F7A",
-    "Survey & SUE": "#97536A",
-    "Construction Inspection": "#8AAFB6",
-    "Technology & GIS": "#B7CECD",
-    "Right of Way": "#D9DAE4",
-    "Environmental": "#9B3426",
-    "Bridge / Structural": "#4A7A8A",
-    "On-Call": "#6F2740",
-    "Other Engineering": "#68949E",
-    "Unknown": "#D9DAE4",
+    "Roadway":                 "#1C355E",  # Halff Blue
+    "Water / Wastewater":      "#115E6B",  # Halff Teal
+    "Drainage":                "#FC6758",  # Halff Salmon — high-contrast major practice
+    "Planning / Study":        "#68949E",  # Halff Seafoam
+    "Park / Trail":            "#2E7D32",  # Forest green
+    "Traffic & Signals":       "#E08E45",  # Warm orange
+    "Facilities":              "#7E3F8F",  # Plum
+    "Construction Inspection": "#C28E0E",  # Mustard / gold
+    "Survey & SUE":            "#5E4B8B",  # Purple
+    "Technology & GIS":        "#00A0B0",  # Bright cyan
+    "Right of Way":            "#97536A",  # Rose
+    "Environmental":           "#9B3426",  # Brick (kept — distinctive)
+    "Bridge / Structural":     "#4A7A8A",  # Slate
+    "On-Call":                 "#8B7355",  # Warm gray-brown
+    "Other Engineering":       "#B7CECD",  # Halff Mint (low-priority neutral)
+    "Unknown":                 "#D9DAE4",  # Halff Cool Gray
 }
 
 # Halff canonical aliases — dashboard uses these for the "highlight Halff row"
