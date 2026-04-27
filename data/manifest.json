@@ -1,5 +1,5 @@
 {
-  "generated": "2026-04-27T15:07:25-05:00",
+  "generated": "2026-04-27T15:22:25-05:00",
   "generator": "build_dashboard_data.py v2.27",
   "cities": [
     {
@@ -138,7 +138,7 @@
         "min": "2023-01-09",
         "max": "2026-04-13"
       },
-      "last_modified": "2026-04-27T13:47:17-05:00",
+      "last_modified": "2026-04-27T15:18:07-05:00",
       "size_bytes": 41963,
       "status": "ok"
     },
