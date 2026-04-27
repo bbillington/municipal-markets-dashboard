@@ -187,14 +187,16 @@ HALFF_ALIASES = ["halff associates", "halff"]
 # insensitively against the company text. Multiple alias forms can map
 # to the same canonical name (e.g. "FNI" and "Freese & Nichols, Inc.").
 CONSULTANT_ALIASES = {
-    # Freese and Nichols
+    # Freese and Nichols — internal abbreviation + ampersand variants.
     "fni": "Freese and Nichols, Inc.",
     "freese & nichols, inc.": "Freese and Nichols, Inc.",
     "freese & nichols": "Freese and Nichols, Inc.",
-    # Carollo (TRC acquisition, March 2024)
-    "trc engineers, inc.": "Carollo Engineers, Inc.",
-    "trc engineers": "Carollo Engineers, Inc.",
-    "trc": "Carollo Engineers, Inc.",
+    # NOTE: TRC Engineers ↔ Carollo Engineers was investigated 2026-04-27 and
+    # rejected — they are independent firms, no acquisition. Do not alias
+    # them. The Fort Worth Village Creek WRF Primary Clarifiers row that
+    # appears under both names ($3,977,400, 2025) is most likely a data-
+    # entry duplicate that needs source-PDF review to confirm which firm
+    # was actually awarded; flag it manually rather than auto-merging.
 }
 
 
