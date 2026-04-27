@@ -1,33 +1,33 @@
 {
-  "generated": "2026-04-27T15:22:25-05:00",
+  "generated": "2026-04-27T17:15:20-05:00",
   "generator": "build_dashboard_data.py v2.27",
   "cities": [
     {
       "slug": "dallas",
       "name": "Dallas",
       "path": "dallas.json",
-      "contract_count": 198,
-      "total_value_usd": 178131573.27,
+      "contract_count": 199,
+      "total_value_usd": 179631573.27,
       "date_range": {
         "min": "2023-01-25",
         "max": "2026-04-22"
       },
-      "last_modified": "2026-04-27T13:46:57-05:00",
-      "size_bytes": 113922,
+      "last_modified": "2026-04-27T15:51:41-05:00",
+      "size_bytes": 114617,
       "status": "ok"
     },
     {
       "slug": "fortworth",
       "name": "Fort Worth",
       "path": "fortworth.json",
-      "contract_count": 491,
-      "total_value_usd": 409703471.87,
+      "contract_count": 512,
+      "total_value_usd": 446243935.29,
       "date_range": {
         "min": "2023-01-10",
         "max": "2026-03-31"
       },
-      "last_modified": "2026-04-27T15:06:59-05:00",
-      "size_bytes": 278338,
+      "last_modified": "2026-04-27T17:15:14-05:00",
+      "size_bytes": 296771,
       "status": "ok"
     },
     {
@@ -68,7 +68,7 @@
         "min": "2023-01-24",
         "max": "2026-03-03"
       },
-      "last_modified": "2026-04-27T13:46:46-05:00",
+      "last_modified": "2026-04-27T15:51:29-05:00",
       "size_bytes": 35994,
       "status": "ok"
     },
