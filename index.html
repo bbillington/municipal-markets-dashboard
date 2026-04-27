@@ -23,7 +23,7 @@
      nav badge and footer text. Cache-bust query string is bumped on every
      release so a new APP_VERSION is picked up immediately even if the
      browser cached version.js from a prior visit. -->
-<script src="version.js?v=2.41"></script>
+<script src="version.js?v=2.42"></script>
 <!-- PDF export libraries -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
@@ -4401,8 +4401,11 @@ function finalizeDashboard() {
   // Wire up the PM Intelligence password gate (also idempotent).
   initPmIntelligenceGate();
 
-  // Wire up smooth-scroll JUMP TO behavior (idempotent).
-  initSectionNavScroll();
+  // JUMP TO: handled natively. <a href="#section-..."> + CSS
+  // scroll-margin-top on .chart-section-header + html { scroll-behavior:
+  // smooth } gives correct behavior in both directions. Custom JS used
+  // to live here but had subtle bugs interacting with sibling sticky
+  // elements during the up-direction smooth-scroll animation.
 
   // Wire the refresh button + nav version badge. The freshness timestamp
   // lives in the footer ("Latest processing: <date>") — see updateFooter().
@@ -4425,39 +4428,14 @@ function finalizeDashboard() {
 }
 
 /* ------------------------------------------------------------------
-   JUMP TO — smooth scroll to the requested section header, with the
-   target landing just below the actual filter-bar bottom. Native hash
-   navigation was unreliable because the section headers are sticky:
-   the browser's "scroll target into view" landed at scroll-margin-top,
-   which didn't always match the sticky lock, leaving the previous
-   section's header bleeding above (or the new target landing too low
-   below the filter bar). This JS measures the filter bar at click
-   time and scrolls so the target's top sits 8px below it.
+   JUMP TO — native hash navigation handles it. The <a> elements with
+   href="#section-..." trigger browser-native scroll. The CSS rule
+   `scroll-margin-top: calc(var(--nav-h) + 58px)` on
+   .chart-section-header lands the target at the sticky lock; the
+   `html { scroll-behavior: smooth }` rule makes it animated. Both
+   directions behave identically — that's the whole point of going
+   native.
 ------------------------------------------------------------------- */
-function initSectionNavScroll() {
-  var btns = document.querySelectorAll('.section-nav-btn[href^="#"]');
-  btns.forEach(function(btn) {
-    if (btn._navScrollWired) return;
-    btn._navScrollWired = true;
-    btn.addEventListener('click', function(e) {
-      var hash = btn.getAttribute('href') || '';
-      if (!hash || hash.charAt(0) !== '#') return;
-      var target = document.getElementById(hash.slice(1));
-      if (!target) return;
-      e.preventDefault();
-      // Use the browser's native scrollIntoView. The CSS rule
-      // `scroll-margin-top: calc(var(--nav-h) + 58px)` on
-      // .chart-section-header tells the browser to land the target at
-      // the sticky lock position. Behavior is symmetric up/down — was
-      // not in our previous window.scrollTo math because of an asymmetry
-      // in how multiple sibling sticky elements stack during the smooth
-      // animation.
-      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      // Update history without triggering native hash-jump.
-      try { history.replaceState(null, '', hash); } catch (err) {}
-    });
-  });
-}
 
 /* ------------------------------------------------------------------
    Nav version badge — reads window.APP_VERSION (from docs/version.js).
