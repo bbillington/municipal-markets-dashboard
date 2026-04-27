@@ -2102,11 +2102,12 @@ body.custom-build-mode .map-card #map-expand-btn {
   top: calc(var(--nav-h) + 58px);
   z-index: 50;
   overflow: hidden;
-  /* scroll-margin-top: only used as a fallback. The real Jump-To offset
-     is computed in JS (initSectionNavScroll) which measures the actual
-     filter-bar height at click time and uses window.scrollTo() —
-     reliable when sticky stacking confuses the native hash-scroll. */
-  scroll-margin-top: calc(var(--nav-h) + 80px);
+  /* scroll-margin-top set to EXACTLY match the sticky `top` value above.
+     scrollIntoView() in the JUMP TO handler uses this offset, so the
+     target lands at the sticky lock — the new banner takes the sticky
+     slot directly and the previous one exits as we scroll past its
+     grid range. */
+  scroll-margin-top: calc(var(--nav-h) + 58px);
 }
 
 /* Hide sticky section headers while the map card is expanded — they
@@ -4444,20 +4445,14 @@ function initSectionNavScroll() {
       var target = document.getElementById(hash.slice(1));
       if (!target) return;
       e.preventDefault();
-      // The fix: land the target at EXACTLY the section-header sticky
-      // lock position so the new banner takes over the sticky slot
-      // and the previous section's banner exits cleanly. Reading the
-      // computed `top` on a section header is the bulletproof way to
-      // get the sticky lock value — adapts automatically if the CSS
-      // changes (e.g. filter-bar height swap).
-      var sampleHeader = document.querySelector('.chart-section-header');
-      var stickyLock = 114;  // fallback: matches calc(var(--nav-h) + 58px)
-      if (sampleHeader) {
-        var topPx = parseFloat(getComputedStyle(sampleHeader).top);
-        if (!isNaN(topPx) && topPx > 0) stickyLock = topPx;
-      }
-      var targetY = target.getBoundingClientRect().top + window.scrollY - stickyLock;
-      window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
+      // Use the browser's native scrollIntoView. The CSS rule
+      // `scroll-margin-top: calc(var(--nav-h) + 58px)` on
+      // .chart-section-header tells the browser to land the target at
+      // the sticky lock position. Behavior is symmetric up/down — was
+      // not in our previous window.scrollTo math because of an asymmetry
+      // in how multiple sibling sticky elements stack during the smooth
+      // animation.
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
       // Update history without triggering native hash-jump.
       try { history.replaceState(null, '', hash); } catch (err) {}
     });
