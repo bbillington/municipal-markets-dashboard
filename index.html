@@ -173,6 +173,57 @@ body {
 }
 #btn-export-pdf:hover { background: var(--seafoam); color: var(--white); }
 
+/* Header data-freshness pill — reads STATE.lastModified.
+   Sits next to the Refresh button in the top right of the nav. */
+.nav-freshness-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid rgba(255,255,255,.25);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--mint);
+  background: rgba(255,255,255,.06);
+  white-space: nowrap;
+  font-family: 'Public Sans', Arial, sans-serif;
+  letter-spacing: .2px;
+}
+.nav-freshness-pill::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--seafoam);
+}
+.nav-freshness-pill.stale::before { background: var(--salmon); }
+
+#btn-refresh-data {
+  background: transparent;
+  border: 1.5px solid var(--seafoam);
+  color: var(--mint);
+  padding: 6px 12px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, color .15s, opacity .15s;
+  white-space: nowrap;
+  font-family: 'Public Sans', Arial, sans-serif;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+#btn-refresh-data:hover:not(:disabled) { background: var(--seafoam); color: var(--white); }
+#btn-refresh-data:disabled { opacity: .55; cursor: progress; }
+#btn-refresh-data svg { width: 12px; height: 12px; }
+#btn-refresh-data.refreshing svg { animation: refresh-spin 1s linear infinite; }
+@keyframes refresh-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 
 /* ======================================================================
    TAB PANELS
@@ -813,6 +864,41 @@ body {
 }
 .btn-export-chart:hover { border-color: var(--seafoam); color: var(--blue); }
 
+/* Top-N segmented pill toggle (Market Share Evolution chart header).
+   Pair of buttons sharing one rounded outline. Active state = filled
+   Halff Blue. Public Sans for consistency with other chart-header text. */
+.topn-toggle {
+  display: inline-flex;
+  border: 1.5px solid var(--cool-gray);
+  border-radius: 999px;
+  overflow: hidden;
+  flex-shrink: 0;
+  font-family: 'Public Sans', Arial, sans-serif;
+}
+.topn-btn {
+  background: var(--white);
+  border: 0;
+  color: var(--blue);
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+  font-family: inherit;
+  line-height: 1.4;
+}
+.topn-btn + .topn-btn { border-left: 1px solid var(--cool-gray); }
+.topn-btn:hover:not(.topn-btn-active) { background: rgba(28, 53, 94, .06); }
+.topn-btn-active {
+  background: var(--blue);
+  color: var(--white);
+  cursor: default;
+}
+.topn-btn:focus-visible {
+  outline: 2px solid var(--seafoam);
+  outline-offset: -2px;
+}
+
 /* Expand chart button (injected by JS into .chart-header actions area).
    Sits inline in the header flex next to any CSV / Back buttons, so the
    two stop overlapping on cards like "Type Doughnut" that have both. */
@@ -1406,6 +1492,113 @@ body.chart-expanded { overflow: hidden; }
 }
 
 .cip-hidden { display: none; }
+
+/* ======================================================================
+   PM Intelligence: locked / unlocked states.
+   Default = locked: a Coming Soon block + small password gate is shown
+   and the alpha PM Intelligence UI is hidden. Entering the right
+   password flips the body class to reveal the alpha content. The
+   alpha is rough and not for general consumption yet.
+====================================================================== */
+.pmi-locked-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px 40px;
+  text-align: center;
+  color: var(--seafoam);
+  max-width: 720px;
+  margin: 0 auto;
+}
+.pmi-locked-icon {
+  width: 56px;
+  height: 56px;
+  margin-bottom: 18px;
+  color: var(--seafoam);
+  opacity: .55;
+}
+.pmi-locked-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--blue);
+  margin: 0 0 10px;
+  font-family: 'Public Sans', Arial, sans-serif;
+}
+.pmi-locked-tag {
+  display: inline-block;
+  margin-left: 10px;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .8px;
+  background: var(--seafoam);
+  color: var(--white);
+  border-radius: 3px;
+  vertical-align: middle;
+}
+.pmi-locked-intent {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--dark);
+  margin: 0 0 24px;
+  max-width: 600px;
+}
+.pmi-locked-intent strong { color: var(--blue); }
+.pmi-gate {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1.5px solid var(--cool-gray);
+  border-radius: 8px;
+  background: var(--white);
+}
+.pmi-gate-label {
+  font-size: 12px;
+  color: var(--seafoam);
+  font-weight: 600;
+}
+.pmi-gate input[type="password"] {
+  border: 1px solid var(--cool-gray);
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-family: 'Public Sans', Arial, sans-serif;
+  width: 180px;
+  color: var(--dark);
+  background: var(--white);
+  outline: none;
+  transition: border-color .15s;
+}
+.pmi-gate input[type="password"]:focus { border-color: var(--blue); }
+.pmi-gate button {
+  background: var(--blue);
+  color: var(--white);
+  border: 0;
+  padding: 7px 14px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Public Sans', Arial, sans-serif;
+  transition: background .15s;
+}
+.pmi-gate button:hover { background: var(--dark); }
+.pmi-gate-error {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--salmon);
+  font-weight: 600;
+  min-height: 16px;
+}
+
+/* Default: alpha content hidden, locked block shown. .pmi-unlocked on
+   the body flips that. */
+#pmi-locked-block { display: flex; }
+#pmi-unlocked-content { display: none; }
+body.pmi-unlocked #pmi-locked-block { display: none; }
+body.pmi-unlocked #pmi-unlocked-content { display: block; }
 
 /* ======================================================================
    FOOTER
@@ -2015,6 +2208,17 @@ body.custom-build-mode .map-card #map-expand-btn {
   </div>
 
   <button id="btn-custom-build" style="background:transparent;border:1px solid rgba(255,255,255,.3);color:var(--white);padding:6px 12px;border-radius:4px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;margin-right:6px;" title="Build a custom view with selected charts">+ Build View</button>
+  <span class="nav-freshness-pill" id="nav-freshness-pill" title="Time of the most recent processing run on disk">
+    Last updated: <span id="nav-freshness-text">—</span>
+  </span>
+  <button id="btn-refresh-data" type="button" title="Re-fetch dashboard data from the server (no full reload)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="23 4 23 10 17 10"></polyline>
+      <polyline points="1 20 1 14 7 14"></polyline>
+      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+    </svg>
+    Refresh Data
+  </button>
   <button id="btn-export-csv">Export CSV</button>
   <button id="btn-export-pdf">Export PDF</button>
 </nav>
@@ -2405,11 +2609,15 @@ body.custom-build-mode .map-card #map-expand-btn {
       </div>
 
       <!-- Chart 11: Consultant Market Share Evolution -->
-      <div class="chart-card chart-full">
+      <div class="chart-card chart-full" id="card-market-share">
         <div class="chart-header">
           <div>
-            <div class="chart-title">Top 5 Market Share Evolution</div>
-            <div class="chart-subtitle">How the top 5 firms divide their combined spend each year (stacks to 100%)</div>
+            <div class="chart-title" id="chartMarketShare-title">Top 5 Market Share Evolution</div>
+            <div class="chart-subtitle" id="chartMarketShare-subtitle">How the top 5 firms divide their combined spend each year (stacks to 100%)</div>
+          </div>
+          <div class="topn-toggle" role="group" aria-label="Number of firms to display">
+            <button type="button" class="topn-btn topn-btn-active" data-topn="5">Top 5</button>
+            <button type="button" class="topn-btn" data-topn="10">Top 10</button>
           </div>
         </div>
         <div class="chart-wrap"><canvas id="chartMarketShare"></canvas></div>
@@ -2564,6 +2772,41 @@ body.custom-build-mode .map-card #map-expand-btn {
 ================================================================= -->
 <div class="tab-panel" id="tab-pmi">
 
+  <!-- LOCKED state (default): Coming Soon + password gate.
+       The alpha PM Intelligence UI below is rough enough that we hide it
+       from public viewers until they enter the password. -->
+  <div id="pmi-locked-block" class="pmi-locked-block">
+    <svg class="pmi-locked-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="4" y="11" width="16" height="9" rx="2"></rect>
+      <path d="M8 11V7a4 4 0 0 1 8 0v4"></path>
+      <circle cx="12" cy="15.5" r="1.2" fill="currentColor"></circle>
+    </svg>
+    <h2 class="pmi-locked-title">PM Intelligence <span class="pmi-locked-tag">COMING SOON</span></h2>
+    <p class="pmi-locked-intent">
+      <strong>The intent:</strong> aggregate every project manager across firms
+      and cities into one searchable view — see which PMs lead the most work,
+      which firms they hop between, which cities they specialize in, and how
+      Halff PMs stack up. Eventually this becomes the relationship map for
+      pursuing PSAs and identifying poach / hire candidates.
+    </p>
+    <p class="pmi-locked-intent" style="margin-top:-8px;">
+      <strong>Why it's hidden:</strong> PM coverage is thin today (most
+      council documents don't carry the PM name) and the data is patchy
+      enough that it would mislead a casual viewer. The backfill scripts
+      are running but coverage is below the bar for public alpha.
+    </p>
+    <form class="pmi-gate" id="pmi-gate-form" autocomplete="off">
+      <span class="pmi-gate-label">Internal preview:</span>
+      <input type="password" id="pmi-gate-input" placeholder="Password" autocomplete="off" spellcheck="false" aria-label="Password to unlock PM Intelligence alpha">
+      <button type="submit">Unlock</button>
+    </form>
+    <div class="pmi-gate-error" id="pmi-gate-error" role="status" aria-live="polite"></div>
+  </div>
+
+  <!-- UNLOCKED state: the existing alpha PM Intelligence content. Gated
+       by `body.pmi-unlocked` (set by the password gate handler). -->
+  <div id="pmi-unlocked-content">
+
   <div style="margin-bottom:20px;">
     <h2 style="font-size:18px;font-weight:700;color:var(--blue);margin:0 0 4px;">
       PM Intelligence
@@ -2614,6 +2857,8 @@ body.custom-build-mode .map-card #map-expand-btn {
     <div class="pm-empty-title">No PMs match your filters</div>
     <div class="pm-empty-sub">PM coverage is thin today — most council docs don't carry the PM name. Running <code>py Processing/backfill_pm_names.py --use-claude</code> will improve coverage. Cover-letter-based recovery depends on whether the source PDF contains the signed transmittal.</div>
   </div>
+
+  </div><!-- /pmi-unlocked-content -->
 
 </div><!-- /tab-pmi -->
 
@@ -2737,6 +2982,11 @@ const STATE = {
   customSelection: new Set(),  // build-mode selected card IDs
   filters: { cities: new Set(), years: new Set(), types: new Set(), consultant: '' },
   allCities: [], allYears: [], allTypes: [], debounceTimer: null,
+  // Market Share Evolution: card view shows Top 5 by default; expanding the
+  // card auto-bumps to Top 10 unless the user has manually toggled (the
+  // override sticks for the rest of the session — until reload).
+  marketShareTopN: 5,
+  marketShareTopNOverridden: false,
 };
 
 /* ======================================================================
@@ -3772,11 +4022,27 @@ function loadFilterState() {
     if (typeof Chart === 'undefined' || !Chart.instances) return;
     var canvases = card.querySelectorAll('canvas');
     canvases.forEach(function(c) {
+      // Clear inline width/height that Chart.js stamped on the canvas in the
+      // previous (expanded or card) layout. Without this, resize() can read
+      // stale pixel dims and re-render at the wrong size — the bug behind the
+      // "minimize lands at the wrong size" report.
+      c.style.width = '';
+      c.style.height = '';
+      c.removeAttribute('width');
+      c.removeAttribute('height');
       for (var id in Chart.instances) {
         var inst = Chart.instances[id];
         if (inst && inst.canvas === c) { try { inst.resize(); } catch(e) {} }
       }
     });
+  }
+
+  // Run fn after the browser has applied the current style/layout writes.
+  // Double rAF beats a fixed setTimeout — the resize used to fire at 50ms
+  // wallclock, which sometimes raced ahead of the layout pass on slower
+  // hardware or under load, leaving Chart.js measuring the previous parent.
+  function _afterNextLayout(fn) {
+    requestAnimationFrame(function() { requestAnimationFrame(fn); });
   }
 
   // When a chart is expanded, keep the sticky filter bar fully visible +
@@ -3803,7 +4069,9 @@ function loadFilterState() {
     var scrim = document.getElementById('chart-scrim');
     if (scrim) { scrim.classList.remove('visible'); scrim.style.top = ''; }
     document.body.classList.remove('chart-expanded');
-    setTimeout(function() { resizeChartsIn(expanded); }, 50);
+    _afterNextLayout(function() { resizeChartsIn(expanded); });
+    // Notify any per-chart hooks (e.g. Market Share Top-N auto-toggle)
+    expanded.dispatchEvent(new CustomEvent('chart-card-collapsed', { bubbles: true }));
   }
 
   function expandCard(card) {
@@ -3816,7 +4084,9 @@ function loadFilterState() {
     var scrim = document.getElementById('chart-scrim');
     if (scrim) { scrim.classList.add('visible'); scrim.style.top = topPx + 'px'; }
     document.body.classList.add('chart-expanded');
-    setTimeout(function() { resizeChartsIn(card); }, 50);
+    _afterNextLayout(function() { resizeChartsIn(card); });
+    // Notify any per-chart hooks (e.g. Market Share Top-N auto-toggle)
+    card.dispatchEvent(new CustomEvent('chart-card-expanded', { bubbles: true }));
   }
 
   function injectExpandButtons() {
@@ -3957,7 +4227,173 @@ function finalizeDashboard() {
     setTimeout(window.injectChartExpandButtons, 100);
   }
 
+  // Wire up the Market Share Top-N toggle (idempotent — safe to run again
+  // if finalizeDashboard fires twice).
+  initMarketShareTopNToggle();
+
+  // Wire up the PM Intelligence password gate (also idempotent).
+  initPmIntelligenceGate();
+
+  // Update the header freshness pill + ensure the refresh button is wired.
+  updateFreshnessPill();
+  initRefreshButton();
+
   console.log('Dashboard initialized with ' + STATE.allData.length + ' contracts from ' + STATE.allCities.length + ' cities');
+}
+
+/* ------------------------------------------------------------------
+   Header freshness pill — reads STATE.lastModified.
+
+   Same source of truth as the existing footer "Latest processing"
+   line, so the two surfaces cannot drift. Tinted salmon (.stale)
+   when the latest data is older than 14 days.
+------------------------------------------------------------------- */
+function updateFreshnessPill() {
+  var el = document.getElementById('nav-freshness-text');
+  var pill = document.getElementById('nav-freshness-pill');
+  if (!el || !pill) return;
+  if (!STATE.lastModified) {
+    el.textContent = '—';
+    pill.classList.remove('stale');
+    return;
+  }
+  var d = new Date(STATE.lastModified);
+  var fmt;
+  try {
+    fmt = new Intl.DateTimeFormat('en-US', {
+      year: 'numeric', month: 'short', day: 'numeric',
+      hour: 'numeric', minute: '2-digit'
+    }).format(d);
+  } catch (e) {
+    fmt = d.toLocaleString();
+  }
+  el.textContent = fmt;
+  var ageDays = (Date.now() - d.getTime()) / 86400000;
+  pill.classList.toggle('stale', ageDays > 14);
+}
+
+/* ------------------------------------------------------------------
+   Refresh Data button — re-fetches manifest + per-city JSON without
+   a full page reload. Does NOT trigger a new pipeline run on the
+   server; it just picks up whatever the latest sync_to_public_dashboard
+   push deposited.
+------------------------------------------------------------------- */
+function initRefreshButton() {
+  var btn = document.getElementById('btn-refresh-data');
+  if (!btn || btn.dataset.refreshWired === '1') return;
+  btn.dataset.refreshWired = '1';
+
+  btn.addEventListener('click', function() {
+    if (btn.disabled) return;
+    btn.disabled = true;
+    btn.classList.add('refreshing');
+    var oldLabel = btn.querySelector('span') || null;
+    // The promise chain inside loadContractData() already calls
+    // finalizeDashboard() on success, which re-invokes
+    // updateFreshnessPill — so the pill updates on its own.
+    try {
+      loadContractData();
+    } catch (e) {
+      console.error('Refresh failed:', e);
+    }
+    // Re-enable the button after a short delay regardless of outcome.
+    // loadContractData is fire-and-forget here (it returns undefined
+    // because the existing implementation doesn't expose the promise),
+    // so we use a conservative timeout. Worst case the user can click
+    // again — the function is idempotent.
+    setTimeout(function() {
+      btn.disabled = false;
+      btn.classList.remove('refreshing');
+    }, 2500);
+    void oldLabel;
+  });
+}
+
+/* ------------------------------------------------------------------
+   PM Intelligence password gate.
+
+   The PM Intelligence tab is alpha-quality and PM coverage is too thin
+   to show the public. Default state is locked — a Coming Soon block
+   with a small password input. Entering the right password sets a
+   sessionStorage flag and adds `body.pmi-unlocked`, which CSS uses
+   to swap the locked block for the alpha content.
+
+   Not security — anyone who reads the source can find the password.
+   This is a "casual viewer" filter. The password is intentionally
+   simple and chosen by the project owner.
+------------------------------------------------------------------- */
+function initPmIntelligenceGate() {
+  var form = document.getElementById('pmi-gate-form');
+  if (!form || form.dataset.gateWired === '1') return;
+  form.dataset.gateWired = '1';
+
+  var input = document.getElementById('pmi-gate-input');
+  var errEl = document.getElementById('pmi-gate-error');
+  var EXPECTED = 'redcookieyummy';
+
+  // Restore unlocked state if previously entered this session.
+  try {
+    if (sessionStorage.getItem('pmi-unlocked') === '1') {
+      document.body.classList.add('pmi-unlocked');
+    }
+  } catch (e) {
+    // sessionStorage can throw under privacy modes — degrade silently
+  }
+
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    var entered = (input && input.value || '').trim();
+    if (entered === EXPECTED) {
+      document.body.classList.add('pmi-unlocked');
+      try { sessionStorage.setItem('pmi-unlocked', '1'); } catch (e) {}
+      if (errEl) errEl.textContent = '';
+      if (input) input.value = '';
+      // The PM Intelligence renderer was already invoked at startup;
+      // it cheaply no-ops when the locked block is showing. After
+      // unlock the existing rendered output is now visible.
+    } else {
+      if (errEl) errEl.textContent = 'Incorrect password.';
+      if (input) { input.value = ''; input.focus(); }
+    }
+  });
+}
+
+/* ------------------------------------------------------------------
+   Market Share Evolution: Top-N pill toggle wiring.
+
+   Default: card view shows Top 5. Expanding the card auto-bumps to
+   Top 10. Collapsing reverts. User clicks lock the choice for the
+   rest of the session (override clears on reload).
+
+   Listens for the chart-card-expanded / chart-card-collapsed events
+   the expand-chart controller dispatches in expandCard / collapseExpanded.
+------------------------------------------------------------------- */
+function initMarketShareTopNToggle() {
+  var card = document.getElementById('card-market-share');
+  if (!card || card.dataset.topnWired === '1') return;
+  card.dataset.topnWired = '1';
+
+  card.querySelectorAll('.topn-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var n = Number(btn.dataset.topn);
+      if (!n || n === STATE.marketShareTopN) return;
+      STATE.marketShareTopN = n;
+      STATE.marketShareTopNOverridden = true;
+      renderMarketShareEvolution();
+    });
+  });
+
+  card.addEventListener('chart-card-expanded', function() {
+    if (STATE.marketShareTopNOverridden) return;
+    STATE.marketShareTopN = 10;
+    renderMarketShareEvolution();
+  });
+
+  card.addEventListener('chart-card-collapsed', function() {
+    if (STATE.marketShareTopNOverridden) return;
+    STATE.marketShareTopN = 5;
+    renderMarketShareEvolution();
+  });
 }
 
 /* ======================================================================
@@ -5606,34 +6042,53 @@ function renderMarketShareEvolution() {
   const data = STATE.filteredData.filter(r => r.year && r.company);
   if (data.length === 0) { destroyChart('chartMarketShare'); return; }
 
-  // Find top 5 consultants overall
+  // Top-N is driven by STATE.marketShareTopN (5 in card view, 10 in modal,
+  // pinnable by clicking the segmented toggle).
+  const topN = STATE.marketShareTopN || 5;
+
+  // Find top-N consultants overall
   const companyTotals = {};
   data.forEach(function(r) {
     companyTotals[r.company] = (companyTotals[r.company] || 0) + r.amount;
   });
-  const top5 = Object.entries(companyTotals)
+  const topFirms = Object.entries(companyTotals)
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
+    .slice(0, topN)
     .map(e => e[0]);
+
+  // Update the chart-card header copy + toggle active state. Defensive
+  // queries — the card markup might be missing on older builds.
+  const titleEl = document.getElementById('chartMarketShare-title');
+  const subEl = document.getElementById('chartMarketShare-subtitle');
+  if (titleEl) titleEl.textContent = 'Top ' + topN + ' Market Share Evolution';
+  if (subEl) {
+    subEl.textContent = 'How the top ' + topN +
+      ' firms divide their combined spend each year (stacks to 100%)';
+  }
+  document.querySelectorAll('#card-market-share .topn-btn').forEach(function(btn) {
+    var isActive = Number(btn.dataset.topn) === topN;
+    btn.classList.toggle('topn-btn-active', isActive);
+    btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+  });
 
   const years = unique(data.map(r => r.year)).sort();
 
-  // Precompute per-year: each top-5 firm's $ and the combined top-5 $
-  // Share is firm / top-5 combined (so the stack sums to 100%)
-  var yearTopFiveTotal = {};
+  // Precompute per-year: each top-N firm's $ and the combined top-N $.
+  // Share is firm / top-N combined (so the stack sums to 100%).
+  var yearTopTotal = {};
   years.forEach(function(yr) {
     var yearRows = data.filter(r => r.year === yr);
-    yearTopFiveTotal[yr] = top5.reduce(function(sum, co) {
+    yearTopTotal[yr] = topFirms.reduce(function(sum, co) {
       return sum + sumBy(yearRows.filter(r => r.company === co), r => r.amount);
     }, 0);
   });
 
   let colorIdx = 0;
-  const datasets = top5.map(function(company) {
+  const datasets = topFirms.map(function(company) {
     const values = years.map(function(yr) {
       const yearRows = data.filter(r => r.year === yr);
       const companyTotal = sumBy(yearRows.filter(r => r.company === company), r => r.amount);
-      const denom = yearTopFiveTotal[yr];
+      const denom = yearTopTotal[yr];
       return denom > 0 ? +((companyTotal / denom) * 100).toFixed(1) : 0;
     });
     let color, weight;
@@ -5685,7 +6140,7 @@ function renderMarketShareEvolution() {
         beginAtZero: true,
         max: 100,
         stacked: true,
-        title: { display: true, text: 'Share of Top 5 Spend (%)', font: CHART_FONT, color: '#002B3C' },
+        title: { display: true, text: 'Share of Top ' + topN + ' Spend (%)', font: CHART_FONT, color: '#002B3C' },
         ticks: { ...CHART_DEFAULTS.scales.y.ticks, stepSize: 20, callback: function(v) { return v + '%'; } },
       },
     },

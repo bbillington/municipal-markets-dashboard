@@ -1,5 +1,5 @@
 {
-  "generated": "2026-04-27T11:29:34-05:00",
+  "generated": "2026-04-27T12:37:37-05:00",
   "generator": "build_dashboard_data.py v2.27",
   "cities": [
     {
@@ -12,7 +12,7 @@
         "min": "2023-01-25",
         "max": "2026-04-22"
       },
-      "last_modified": "2026-04-27T11:29:08-05:00",
+      "last_modified": "2026-04-27T12:37:07-05:00",
       "size_bytes": 114122,
       "status": "ok"
     },
@@ -26,7 +26,7 @@
         "min": "2023-01-10",
         "max": "2026-03-31"
       },
-      "last_modified": "2026-04-27T11:29:19-05:00",
+      "last_modified": "2026-04-27T12:37:18-05:00",
       "size_bytes": 239371,
       "status": "ok"
     },
@@ -40,7 +40,7 @@
         "min": "2023-01-17",
         "max": "2026-04-07"
       },
-      "last_modified": "2026-04-27T11:29:23-05:00",
+      "last_modified": "2026-04-27T12:37:24-05:00",
       "size_bytes": 29566,
       "status": "ok"
     },
@@ -68,7 +68,7 @@
         "min": "2023-01-24",
         "max": "2026-03-03"
       },
-      "last_modified": "2026-04-27T11:28:51-05:00",
+      "last_modified": "2026-04-27T12:36:46-05:00",
       "size_bytes": 36489,
       "status": "ok"
     },
@@ -82,7 +82,7 @@
         "min": "2023-01-10",
         "max": "2026-04-14"
       },
-      "last_modified": "2026-04-27T11:28:56-05:00",
+      "last_modified": "2026-04-27T12:36:51-05:00",
       "size_bytes": 70993,
       "status": "ok"
     },
@@ -96,7 +96,7 @@
         "min": "2023-01-09",
         "max": "2026-03-23"
       },
-      "last_modified": "2026-04-27T11:29:00-05:00",
+      "last_modified": "2026-04-27T12:36:56-05:00",
       "size_bytes": 76555,
       "status": "ok"
     },
@@ -104,14 +104,14 @@
       "slug": "garland",
       "name": "Garland",
       "path": "garland.json",
-      "contract_count": 51,
-      "total_value_usd": 40010135.51,
+      "contract_count": 97,
+      "total_value_usd": 72780250.56,
       "date_range": {
         "min": "2023-01-10",
-        "max": "2026-04-07"
+        "max": "2026-04-21"
       },
-      "last_modified": "2026-04-27T11:29:03-05:00",
-      "size_bytes": 30156,
+      "last_modified": "2026-04-27T12:37:01-05:00",
+      "size_bytes": 56539,
       "status": "ok"
     },
     {
@@ -124,7 +124,7 @@
         "min": null,
         "max": null
       },
-      "last_modified": "2026-04-27T11:29:26-05:00",
+      "last_modified": "2026-04-27T12:37:28-05:00",
       "size_bytes": 146,
       "status": "ok"
     },
@@ -138,7 +138,7 @@
         "min": "2023-01-09",
         "max": "2026-04-13"
       },
-      "last_modified": "2026-04-27T11:29:25-05:00",
+      "last_modified": "2026-04-27T12:37:27-05:00",
       "size_bytes": 42023,
       "status": "ok"
     },
@@ -152,7 +152,7 @@
         "min": "2026-03-03",
         "max": "2026-03-26"
       },
-      "last_modified": "2026-04-27T11:29:27-05:00",
+      "last_modified": "2026-04-27T12:37:29-05:00",
       "size_bytes": 4562,
       "status": "ok"
     },
