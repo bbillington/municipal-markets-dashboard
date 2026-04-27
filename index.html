@@ -5008,31 +5008,30 @@ const _CATEGORY_COLOR_CACHE = {};
 // reserved for highlighting Halff specifically (Halff stats bar, Halff
 // scatter dot, etc.). See feedback memory.
 const CATEGORY_COLOR_MAP = {
-  'Roadway':                 '#7E3F8F',  // Plum
+  'Roadway':                 '#6F2740',  // Halff Maroon
   'Water / Wastewater':      '#115E6B',  // Halff Teal
   'Drainage':                '#1C355E',  // Halff Blue (water family)
   'Planning / Study':        '#68949E',  // Halff Seafoam
-  'Park / Trail':            '#2E7D32',  // Forest green
-  'Traffic & Signals':       '#E08E45',  // Warm orange
-  'Facilities':              '#8B7355',  // Warm gray-brown
-  'Construction Inspection': '#C28E0E',  // Mustard
+  'Park / Trail':            '#4A7A8A',  // Mid seafoam (Halff-toned)
+  'Traffic & Signals':       '#D19447',  // Amber
+  'Facilities':              '#97536A',  // Mauve (Halff-toned)
+  'Construction Inspection': '#8AAFB6',  // Light seafoam (Halff-toned)
   'Survey & SUE':            '#5E4B8B',  // Purple
-  'Technology & GIS':        '#00A0B0',  // Bright cyan
-  'Right of Way':            '#97536A',  // Rose
-  'Environmental':           '#9B3426',  // Brick
-  'Bridge / Structural':     '#4A7A8A',  // Slate
+  'Technology & GIS':        '#B7CECD',  // Halff Mint
+  'Right of Way':            '#9B3426',  // Brick red
+  'Environmental':           '#7A8B3F',  // Olive
+  'Bridge / Structural':     '#3B5F7A',  // Navy variant (small bucket)
   'On-Call':                 '#6B7280',  // Medium cool gray
-  'Other Engineering':       '#B7CECD',  // Halff Mint
+  'Other Engineering':       '#A0A0A0',  // Mid gray
   'Other':                   '#D9DAE4',  // Halff Cool Gray (reserved)
   'Unknown':                 '#D9DAE4',  // Halff Cool Gray
 };
 // Fallback hash palette for unexpected category names not in the map
-// or in the live config palette. Same hue spectrum as CATEGORY_COLOR_MAP,
-// salmon-free.
+// or in the live config palette. Halff-toned, salmon-free.
 const CATEGORY_FALLBACK_PALETTE = [
-  '#7E3F8F', '#115E6B', '#1C355E', '#68949E', '#2E7D32',
-  '#E08E45', '#8B7355', '#C28E0E', '#5E4B8B', '#00A0B0',
-  '#97536A', '#9B3426', '#4A7A8A', '#6B7280',
+  '#6F2740', '#115E6B', '#1C355E', '#68949E', '#4A7A8A',
+  '#D19447', '#97536A', '#8AAFB6', '#5E4B8B', '#B7CECD',
+  '#9B3426', '#7A8B3F', '#3B5F7A', '#6B7280',
 ];
 function categoryColor(name) {
   if (!name) return '#999';

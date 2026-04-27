@@ -1,5 +1,5 @@
 {
-  "generated": "2026-04-27T14:31:13-05:00",
+  "generated": "2026-04-27T14:44:10-05:00",
   "generator": "build_dashboard_data.py v2.27",
   "cities": [
     {
@@ -20,14 +20,14 @@
       "slug": "fortworth",
       "name": "Fort Worth",
       "path": "fortworth.json",
-      "contract_count": 474,
-      "total_value_usd": 400999505.87,
+      "contract_count": 480,
+      "total_value_usd": 403385459.87,
       "date_range": {
         "min": "2023-01-10",
         "max": "2026-03-31"
       },
-      "last_modified": "2026-04-27T14:31:09-05:00",
-      "size_bytes": 267217,
+      "last_modified": "2026-04-27T14:44:03-05:00",
+      "size_bytes": 270674,
       "status": "ok"
     },
     {

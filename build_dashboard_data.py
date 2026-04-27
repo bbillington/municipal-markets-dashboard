@@ -135,25 +135,30 @@ TYPE_MAP = {
 # Env = brick, Bridge = slate, On-Call = warm gray. No two slices share a
 # hex; the catch-all buckets (Other / Unknown) get the cool grays.
 CATEGORY_PALETTE = {
-    # Halff Salmon (#FC6758) is intentionally NOT used as a category color —
-    # it's reserved for highlighting Halff specifically (Halff stats bar,
-    # Halff scatter point, Halff bar in Top 10 Consultants, etc.). Using it
-    # for any category would dilute that signal.
-    "Roadway":                 "#7E3F8F",  # Plum — formal, prominent for the primary bucket
+    # Halff-toned palette. Halff Salmon (#FC6758) is intentionally NOT used as
+    # a category color — it's reserved for highlighting Halff specifically
+    # (Halff stats bar, Halff scatter point, Halff bar in Top 10, etc.).
+    #
+    # Top 4 are pure Halff brand colors. Roadway gets Maroon per Brent's
+    # request — pops as the primary slice without using salmon. Lower-tier
+    # categories use the supporting Halff-toned variants (mid seafoam, mauve,
+    # light seafoam, amber, olive, purple, brick) so the whole palette
+    # reads as Halff-branded.
+    "Roadway":                 "#6F2740",  # Halff Maroon — primary, per Brent
     "Water / Wastewater":      "#115E6B",  # Halff Teal (water = blue family)
-    "Drainage":                "#1C355E",  # Halff Blue (drainage = water = blue, per Brent)
+    "Drainage":                "#1C355E",  # Halff Blue (drainage = water = blue)
     "Planning / Study":        "#68949E",  # Halff Seafoam
-    "Park / Trail":            "#2E7D32",  # Forest green (intuitive for parks)
-    "Traffic & Signals":       "#E08E45",  # Warm orange (intuitive for traffic)
-    "Facilities":              "#8B7355",  # Warm gray-brown — quiet, signals lower-priority
-    "Construction Inspection": "#C28E0E",  # Mustard / gold
+    "Park / Trail":            "#4A7A8A",  # Mid seafoam (Halff-toned)
+    "Traffic & Signals":       "#D19447",  # Amber
+    "Facilities":              "#97536A",  # Mauve (Halff-toned)
+    "Construction Inspection": "#8AAFB6",  # Light seafoam (Halff-toned)
     "Survey & SUE":            "#5E4B8B",  # Purple
-    "Technology & GIS":        "#00A0B0",  # Bright cyan
-    "Right of Way":            "#97536A",  # Rose
-    "Environmental":           "#9B3426",  # Brick (kept — distinctive)
-    "Bridge / Structural":     "#4A7A8A",  # Slate
-    "On-Call":                 "#6B7280",  # Medium cool gray (neutral)
-    "Other Engineering":       "#B7CECD",  # Halff Mint (low-priority neutral)
+    "Technology & GIS":        "#B7CECD",  # Halff Mint
+    "Right of Way":            "#9B3426",  # Brick red
+    "Environmental":           "#7A8B3F",  # Olive
+    "Bridge / Structural":     "#3B5F7A",  # Navy variant (small bucket)
+    "On-Call":                 "#6B7280",  # Medium cool gray
+    "Other Engineering":       "#A0A0A0",  # Mid gray
     "Unknown":                 "#D9DAE4",  # Halff Cool Gray
 }
 
