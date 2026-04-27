@@ -4444,16 +4444,19 @@ function initSectionNavScroll() {
       var target = document.getElementById(hash.slice(1));
       if (!target) return;
       e.preventDefault();
-      var fb = document.querySelector('.filter-bar');
-      var nav = document.getElementById('nav');
-      var fbBottom = fb ? fb.getBoundingClientRect().bottom : 0;
-      // The sticky filter bar's bottom (relative to viewport) is where
-      // section headers stick. Measure NOW so we adapt to current
-      // wrapping (filter bar can grow taller when the consultant
-      // dropdown is open or section-nav wraps).
-      var navHeight = nav ? nav.getBoundingClientRect().height : 56;
-      var stickyOffset = Math.max(navHeight, fbBottom);
-      var targetY = target.getBoundingClientRect().top + window.scrollY - stickyOffset - 8;
+      // The fix: land the target at EXACTLY the section-header sticky
+      // lock position so the new banner takes over the sticky slot
+      // and the previous section's banner exits cleanly. Reading the
+      // computed `top` on a section header is the bulletproof way to
+      // get the sticky lock value — adapts automatically if the CSS
+      // changes (e.g. filter-bar height swap).
+      var sampleHeader = document.querySelector('.chart-section-header');
+      var stickyLock = 114;  // fallback: matches calc(var(--nav-h) + 58px)
+      if (sampleHeader) {
+        var topPx = parseFloat(getComputedStyle(sampleHeader).top);
+        if (!isNaN(topPx) && topPx > 0) stickyLock = topPx;
+      }
+      var targetY = target.getBoundingClientRect().top + window.scrollY - stickyLock;
       window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
       // Update history without triggering native hash-jump.
       try { history.replaceState(null, '', hash); } catch (err) {}
