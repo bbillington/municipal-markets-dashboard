@@ -198,10 +198,24 @@ _DRAINAGE_PROJECT_PATTERNS = (
     "hydraulics",
 )
 
-# Source categories that may be over-applied. We only override these — never
-# touch a row already coded Roadway, Water/Wastewater, Parks, etc., where
-# drainage is incidental rather than the primary scope.
-_DRAINAGE_OVERRIDE_FROM = {"Planning / Study", "On-Call", "Unknown", "Other Engineering"}
+# Source categories that may be over-applied. We override these whenever the
+# project NAME has an unambiguous drainage / floodplain / stormwater pattern.
+# Water / Wastewater is included — Brent flagged the Halff/Dallas $5.99M Mill
+# Creek storm drainage project that was sitting under W/WW. The fuzzy-match
+# patterns above are conservative enough that water-replacement-with-incidental-
+# storm-drain rows shouldn't trip the override (they don't lead with a drainage
+# verb in the project title).
+#
+# Roadway and Park / Trail are intentionally NOT in the override list — a
+# road project with drainage work or a park with stream restoration is still
+# primarily that other discipline, and the project name usually reflects it.
+_DRAINAGE_OVERRIDE_FROM = {
+    "Planning / Study",
+    "On-Call",
+    "Unknown",
+    "Other Engineering",
+    "Water / Wastewater",
+}
 
 
 def reclassify_drainage(current_type: str, project: str, notes: str = "") -> str:

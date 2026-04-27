@@ -1,5 +1,5 @@
 {
-  "generated": "2026-04-27T13:52:28-05:00",
+  "generated": "2026-04-27T14:02:28-05:00",
   "generator": "build_dashboard_data.py v2.27",
   "cities": [
     {
@@ -13,7 +13,7 @@
         "max": "2026-04-22"
       },
       "last_modified": "2026-04-27T13:46:57-05:00",
-      "size_bytes": 114122,
+      "size_bytes": 113922,
       "status": "ok"
     },
     {
@@ -26,8 +26,8 @@
         "min": "2023-01-10",
         "max": "2026-03-31"
       },
-      "last_modified": "2026-04-27T13:47:54-05:00",
-      "size_bytes": 255802,
+      "last_modified": "2026-04-27T14:02:16-05:00",
+      "size_bytes": 255492,
       "status": "ok"
     },
     {
@@ -55,7 +55,7 @@
         "max": "2026-03-17"
       },
       "last_modified": "2026-04-27T13:46:43-05:00",
-      "size_bytes": 69425,
+      "size_bytes": 69405,
       "status": "ok"
     },
     {
@@ -69,7 +69,7 @@
         "max": "2026-03-03"
       },
       "last_modified": "2026-04-27T13:46:46-05:00",
-      "size_bytes": 36489,
+      "size_bytes": 36469,
       "status": "ok"
     },
     {
@@ -97,7 +97,7 @@
         "max": "2026-03-23"
       },
       "last_modified": "2026-04-27T13:46:51-05:00",
-      "size_bytes": 76547,
+      "size_bytes": 76527,
       "status": "ok"
     },
     {
@@ -111,7 +111,7 @@
         "max": "2026-04-21"
       },
       "last_modified": "2026-04-27T13:46:53-05:00",
-      "size_bytes": 56062,
+      "size_bytes": 56042,
       "status": "ok"
     },
     {
@@ -139,7 +139,7 @@
         "max": "2026-04-13"
       },
       "last_modified": "2026-04-27T13:47:17-05:00",
-      "size_bytes": 42023,
+      "size_bytes": 41963,
       "status": "ok"
     },
     {
