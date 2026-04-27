@@ -1,5 +1,5 @@
 {
-  "generated": "2026-04-27T12:37:37-05:00",
+  "generated": "2026-04-27T13:47:29-05:00",
   "generator": "build_dashboard_data.py v2.27",
   "cities": [
     {
@@ -12,7 +12,7 @@
         "min": "2023-01-25",
         "max": "2026-04-22"
       },
-      "last_modified": "2026-04-27T12:37:07-05:00",
+      "last_modified": "2026-04-27T13:46:57-05:00",
       "size_bytes": 114122,
       "status": "ok"
     },
@@ -20,14 +20,14 @@
       "slug": "fortworth",
       "name": "Fort Worth",
       "path": "fortworth.json",
-      "contract_count": 430,
-      "total_value_usd": 345703889.87,
+      "contract_count": 454,
+      "total_value_usd": 383838861.87,
       "date_range": {
         "min": "2023-01-10",
         "max": "2026-03-31"
       },
-      "last_modified": "2026-04-27T12:37:18-05:00",
-      "size_bytes": 239371,
+      "last_modified": "2026-04-27T13:47:12-05:00",
+      "size_bytes": 255834,
       "status": "ok"
     },
     {
@@ -40,7 +40,7 @@
         "min": "2023-01-17",
         "max": "2026-04-07"
       },
-      "last_modified": "2026-04-27T12:37:24-05:00",
+      "last_modified": "2026-04-27T13:47:15-05:00",
       "size_bytes": 29566,
       "status": "ok"
     },
@@ -54,7 +54,7 @@
         "min": "2023-02-07",
         "max": "2026-03-17"
       },
-      "last_modified": "2026-04-27T11:28:38-05:00",
+      "last_modified": "2026-04-27T13:46:43-05:00",
       "size_bytes": 69425,
       "status": "ok"
     },
@@ -68,7 +68,7 @@
         "min": "2023-01-24",
         "max": "2026-03-03"
       },
-      "last_modified": "2026-04-27T12:36:46-05:00",
+      "last_modified": "2026-04-27T13:46:46-05:00",
       "size_bytes": 36489,
       "status": "ok"
     },
@@ -76,14 +76,14 @@
       "slug": "celina",
       "name": "Celina",
       "path": "celina.json",
-      "contract_count": 125,
-      "total_value_usd": 50297486.49,
+      "contract_count": 120,
+      "total_value_usd": 42348570.04,
       "date_range": {
         "min": "2023-01-10",
         "max": "2026-04-14"
       },
-      "last_modified": "2026-04-27T12:36:51-05:00",
-      "size_bytes": 70993,
+      "last_modified": "2026-04-27T13:46:49-05:00",
+      "size_bytes": 69027,
       "status": "ok"
     },
     {
@@ -96,7 +96,7 @@
         "min": "2023-01-09",
         "max": "2026-03-23"
       },
-      "last_modified": "2026-04-27T12:36:56-05:00",
+      "last_modified": "2026-04-27T13:46:51-05:00",
       "size_bytes": 76555,
       "status": "ok"
     },
@@ -104,14 +104,14 @@
       "slug": "garland",
       "name": "Garland",
       "path": "garland.json",
-      "contract_count": 97,
-      "total_value_usd": 72780250.56,
+      "contract_count": 96,
+      "total_value_usd": 72103926.56,
       "date_range": {
         "min": "2023-01-10",
         "max": "2026-04-21"
       },
-      "last_modified": "2026-04-27T12:37:01-05:00",
-      "size_bytes": 56539,
+      "last_modified": "2026-04-27T13:46:53-05:00",
+      "size_bytes": 56070,
       "status": "ok"
     },
     {
@@ -124,7 +124,7 @@
         "min": null,
         "max": null
       },
-      "last_modified": "2026-04-27T12:37:28-05:00",
+      "last_modified": "2026-04-27T13:47:17-05:00",
       "size_bytes": 146,
       "status": "ok"
     },
@@ -138,7 +138,7 @@
         "min": "2023-01-09",
         "max": "2026-04-13"
       },
-      "last_modified": "2026-04-27T12:37:27-05:00",
+      "last_modified": "2026-04-27T13:47:17-05:00",
       "size_bytes": 42023,
       "status": "ok"
     },
@@ -152,7 +152,7 @@
         "min": "2026-03-03",
         "max": "2026-03-26"
       },
-      "last_modified": "2026-04-27T12:37:29-05:00",
+      "last_modified": "2026-04-27T13:47:18-05:00",
       "size_bytes": 4562,
       "status": "ok"
     },

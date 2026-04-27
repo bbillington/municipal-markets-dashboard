@@ -2076,7 +2076,12 @@ body.custom-build-mode .map-card #map-expand-btn {
   top: calc(var(--nav-h) + 58px);
   z-index: 50;
   overflow: hidden;
-  scroll-margin-top: calc(var(--nav-h) + 90px);
+  /* Jump-To target offset. Matches the sticky `top` (nav + 58px filter bar)
+     plus a 72px clearance so the previous section header gets pushed
+     fully out when the user clicks a quick-nav pill. The 90px we had
+     before wasn't enough — the previous section's sticky banner kept
+     bleeding above the new one. */
+  scroll-margin-top: calc(var(--nav-h) + 130px);
 }
 .chart-section-header::before {
   content: '';
@@ -2573,7 +2578,10 @@ body.custom-build-mode .map-card #map-expand-btn {
         <div class="chart-wrap"><canvas id="chartTypeDoughnut"></canvas></div>
       </div>
 
-      <!-- Chart: Contract Value by City (full-width bar under 2x2 grid) -->
+      <!-- Chart: Contract Value by City (full-width bar under 2x2 grid).
+           min-height bumped so all 10 active cities fit on the y-axis
+           (was 200px which only fit 5). Each row needs ~30px including
+           inter-bar gap, plus ~80px for legend + title + axis. -->
       <div class="chart-card chart-full">
         <div class="chart-header">
           <div>
@@ -2581,7 +2589,7 @@ body.custom-build-mode .map-card #map-expand-btn {
             <div class="chart-subtitle">Total contract value by municipality &middot; click bar to filter</div>
           </div>
         </div>
-        <div class="chart-wrap"><canvas id="chartCityBar"></canvas></div>
+        <div class="chart-wrap" style="min-height: 380px;"><canvas id="chartCityBar"></canvas></div>
       </div>
 
       <!-- Section: Competitive Analysis -->
