@@ -23,7 +23,7 @@
      nav badge and footer text. Cache-bust query string is bumped on every
      release so a new APP_VERSION is picked up immediately even if the
      browser cached version.js from a prior visit. -->
-<script src="version.js?v=2.47"></script>
+<script src="version.js?v=2.48"></script>
 <!-- PDF export libraries -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
@@ -6961,8 +6961,7 @@ function updateLegend() {
   for (var j = 0; j < steps; j++) {
     var lo = breaks[j];
     var hi = breaks[j + 1];
-    var mid = (lo + hi) / 2;
-    var t = Math.sqrt(mid / maxVal);
+    var t = (j + 0.5) / steps;  // bin-index match to getCityStyle
     var color = lerpColor('#E0F0F1', '#115E6B', Math.min(t, 1));
     var label = fmt(lo) + '\u2013' + fmt(hi);
     html += '<span style="display:inline-flex;align-items:center;gap:3px;"><span style="display:inline-block;width:14px;height:10px;background:' + color + ';border-radius:2px;border:1px solid rgba(0,0,0,.1);"></span>' + label + '</span>';
