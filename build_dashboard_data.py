@@ -191,6 +191,19 @@ CONSULTANT_ALIASES = {
     "fni": "Freese and Nichols, Inc.",
     "freese & nichols, inc.": "Freese and Nichols, Inc.",
     "freese & nichols": "Freese and Nichols, Inc.",
+    # Kimley-Horn — canonical is "Kimley-Horn and Associates, Inc." (the
+    # firm's incorporated name). The "Kimley-Horn Associates, Inc." spelling
+    # without "and" appears in some council documents and was producing
+    # two slices in the Top 5 Market Share chart for the same firm.
+    "kimley-horn associates, inc.": "Kimley-Horn and Associates, Inc.",
+    "kimley-horn associates inc.": "Kimley-Horn and Associates, Inc.",
+    "kimley-horn associates": "Kimley-Horn and Associates, Inc.",
+    "kimley-horn, inc.": "Kimley-Horn and Associates, Inc.",
+    "kimley horn associates, inc.": "Kimley-Horn and Associates, Inc.",
+    "kimley horn and associates, inc.": "Kimley-Horn and Associates, Inc.",
+    "kimley horn, inc.": "Kimley-Horn and Associates, Inc.",
+    "kimley horn inc.": "Kimley-Horn and Associates, Inc.",
+    "kimley horn": "Kimley-Horn and Associates, Inc.",
     # NOTE: TRC Engineers ↔ Carollo Engineers was investigated 2026-04-27 and
     # rejected — they are independent firms, no acquisition. Do not alias
     # them. The Fort Worth Village Creek WRF Primary Clarifiers row that

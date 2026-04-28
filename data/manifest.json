@@ -1,5 +1,5 @@
 {
-  "generated": "2026-04-27T17:15:20-05:00",
+  "generated": "2026-04-27T22:29:11-05:00",
   "generator": "build_dashboard_data.py v2.27",
   "cities": [
     {
@@ -13,7 +13,7 @@
         "max": "2026-04-22"
       },
       "last_modified": "2026-04-27T15:51:41-05:00",
-      "size_bytes": 114617,
+      "size_bytes": 114621,
       "status": "ok"
     },
     {
@@ -27,7 +27,7 @@
         "max": "2026-03-31"
       },
       "last_modified": "2026-04-27T17:15:14-05:00",
-      "size_bytes": 296771,
+      "size_bytes": 296923,
       "status": "ok"
     },
     {
@@ -55,7 +55,7 @@
         "max": "2026-03-17"
       },
       "last_modified": "2026-04-27T13:46:43-05:00",
-      "size_bytes": 68764,
+      "size_bytes": 68791,
       "status": "ok"
     },
     {
@@ -83,7 +83,7 @@
         "max": "2026-04-14"
       },
       "last_modified": "2026-04-27T13:46:49-05:00",
-      "size_bytes": 68623,
+      "size_bytes": 68639,
       "status": "ok"
     },
     {
@@ -111,7 +111,7 @@
         "max": "2026-04-21"
       },
       "last_modified": "2026-04-27T13:46:53-05:00",
-      "size_bytes": 55349,
+      "size_bytes": 55373,
       "status": "ok"
     },
     {
@@ -139,21 +139,21 @@
         "max": "2026-04-13"
       },
       "last_modified": "2026-04-27T15:18:07-05:00",
-      "size_bytes": 41963,
+      "size_bytes": 41975,
       "status": "ok"
     },
     {
       "slug": "grandprairie",
       "name": "Grand Prairie",
       "path": "grandprairie.json",
-      "contract_count": 8,
-      "total_value_usd": 4888170.9,
+      "contract_count": 10,
+      "total_value_usd": 5405051.4,
       "date_range": {
-        "min": "2026-03-03",
+        "min": "2023-01-03",
         "max": "2026-03-26"
       },
-      "last_modified": "2026-04-27T13:47:18-05:00",
-      "size_bytes": 4562,
+      "last_modified": "2026-04-27T22:26:20-05:00",
+      "size_bytes": 5596,
       "status": "ok"
     },
     {
