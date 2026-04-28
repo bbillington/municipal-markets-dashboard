@@ -23,7 +23,7 @@
      nav badge and footer text. Cache-bust query string is bumped on every
      release so a new APP_VERSION is picked up immediately even if the
      browser cached version.js from a prior visit. -->
-<script src="version.js?v=2.52"></script>
+<script src="version.js?v=2.53"></script>
 <!-- PDF export libraries -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
@@ -2573,7 +2573,11 @@ body.map-expanded .chart-section-header {
         <p>Top firms by value, contract type distribution, and quarterly spend</p>
       </div>
 
-      <!-- Chart 1: Consultant Bar (left, row 1) -->
+      <!-- Chart 1: Consultant Bar (left, row 1).
+           min-height fits all 10 firm labels on the y-axis. Without
+           this, Chart.js auto-skips every other tick label when the
+           canvas is shorter than ~30px-per-bar (Brent: only 5 firms
+           showed). -->
       <div class="chart-card">
         <div class="chart-header">
           <div>
@@ -2581,7 +2585,7 @@ body.map-expanded .chart-section-header {
             <div class="chart-subtitle">Ranked by total dollar value &middot; click bar to filter</div>
           </div>
         </div>
-        <div class="chart-wrap"><canvas id="chartConsultantBar"></canvas></div>
+        <div class="chart-wrap" style="min-height: 340px;"><canvas id="chartConsultantBar"></canvas></div>
       </div>
 
       <!-- Chart 3: Over Time (right, spans 2 rows — double tall) -->
@@ -5098,13 +5102,16 @@ function categoryColor(name) {
   return color;
 }
 
-/* Doughnut center label plugin — shows total value in the hole */
+/* Doughnut center label plugin — shows total value in the hole.
+   Hides while a tooltip is active so the hover popup doesn't overlap
+   the center text (Brent flagged the collision in v2.52). */
 const doughnutCenterPlugin = {
   id: 'doughnutCenter',
   afterDraw(chart) {
     if (chart.config.type !== 'doughnut') return;
     var centerCfg = chart.options.plugins.doughnutCenter;
     if (!centerCfg || !centerCfg.value) return;
+    if (chart.tooltip && chart.tooltip.opacity > 0) return;
     var ctx = chart.ctx;
     var area = chart.chartArea;
     var cx = (area.left + area.right) / 2;
