@@ -23,7 +23,7 @@
      nav badge and footer text. Cache-bust query string is bumped on every
      release so a new APP_VERSION is picked up immediately even if the
      browser cached version.js from a prior visit. -->
-<script src="version.js?v=2.50"></script>
+<script src="version.js?v=2.51"></script>
 <!-- PDF export libraries -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
@@ -6619,6 +6619,13 @@ function exportTopContractsCSV() {
 }
 
 /* ------------------------------------------------------------------
+   MAP: 5-color quantile palette (Halff brand). Bin 0 = smallest,
+   bin 4 = largest. Used by both getCityStyle and renderMapLegend so
+   polygon fill and legend swatches stay in lockstep.
+------------------------------------------------------------------ */
+const MAP_BIN_COLORS = ['#E0F0F1', '#B7CECD', '#68949E', '#115E6B', '#1C355E'];
+
+/* ------------------------------------------------------------------
    MAP: getCityStyle — returns Leaflet path style for a city polygon
 ------------------------------------------------------------------ */
 function getCityStyle(cityName) {
@@ -6641,14 +6648,12 @@ function getCityStyle(cityName) {
   const selectedCity = STATE.filters.cities.size === 1 ? [...STATE.filters.cities][0] : null;
   const isSelected = selectedCity && selectedCity === cityName;
 
-  // Compute density fill — QUANTILE bins instead of absolute scale.
-  // Brent flagged that with Fort Worth at $345M and Dallas at $178M, the
-  // sqrt-of-ratio scale we used previously compressed every other city
-  // into the lower ~26% of the color range and they all looked nearly
-  // identical. Quantile binning splits the 10 active cities into 5 even
-  // buckets (2 cities each), so mid-range cities get clearly distinct
-  // colors. The legend uses the same bin scheme, so swatches and map
-  // fills agree.
+  // Compute density fill — QUANTILE bins with a multi-hue Halff palette.
+  // 10 active cities split into 5 even buckets; each bucket gets one of
+  // 5 distinct Halff brand colors (not just shades of teal — Brent
+  // flagged the previous teal-only ramp as still too uniform). Pale
+  // teal for the smallest bin, then mint -> seafoam -> teal -> Halff
+  // blue for the largest bin.
   let fillColor = '#e0e0e0';
   if (rowVal > 0) {
     const cityTotals = {};
@@ -6660,8 +6665,6 @@ function getCityStyle(cityName) {
         cityTotals[r.city] = (cityTotals[r.city] || 0) + (r.amount || 0);
       }
     }
-    // Sort positive values ascending; find which 1/5 bucket rowVal falls
-    // in by rank. Identical-value ties land in the same bucket.
     const sorted = Object.values(cityTotals).filter(v => v > 0).sort((a, b) => a - b);
     const steps = 5;
     let bin = 0;
@@ -6670,8 +6673,7 @@ function getCityStyle(cityName) {
       if (rowVal <= breakVal) { bin = s - 1; break; }
       bin = s - 1;
     }
-    const t = (bin + 0.5) / steps;  // 0.1, 0.3, 0.5, 0.7, 0.9
-    fillColor = lerpColor('#E0F0F1', '#115E6B', t);
+    fillColor = MAP_BIN_COLORS[bin];
   }
 
   // In circles mode, boundaries fade so circles pop
@@ -6954,15 +6956,14 @@ function updateLegend() {
     + '<span style="font-weight:700;font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:var(--blue);">' + legendTitle + '</span>'
     + '<span style="display:inline-flex;align-items:center;gap:3px;"><span style="display:inline-block;width:14px;height:10px;background:#e0e0e0;border-radius:2px;border:1px solid rgba(0,0,0,.1);"></span>None</span>';
 
-  // Legend palette matches getCityStyle — teal ramp for both Value and
-  // Contracts (see comment there). The legend's label swaps from dollar
-  // to count based on metric; the swatches stay teal so visual comparison
-  // across the Value/Contracts toggle is the same scale.
+  // Legend palette matches getCityStyle — multi-hue Halff ramp
+  // (pale teal -> mint -> seafoam -> teal -> Halff blue). Same five
+  // bin colors apply to both the Value and Contracts toggle so visual
+  // comparison across metrics stays on the same scale.
   for (var j = 0; j < steps; j++) {
     var lo = breaks[j];
     var hi = breaks[j + 1];
-    var t = (j + 0.5) / steps;  // bin-index match to getCityStyle
-    var color = lerpColor('#E0F0F1', '#115E6B', Math.min(t, 1));
+    var color = MAP_BIN_COLORS[j];  // match getCityStyle bin colors
     var label = fmt(lo) + '\u2013' + fmt(hi);
     html += '<span style="display:inline-flex;align-items:center;gap:3px;"><span style="display:inline-block;width:14px;height:10px;background:' + color + ';border-radius:2px;border:1px solid rgba(0,0,0,.1);"></span>' + label + '</span>';
   }
