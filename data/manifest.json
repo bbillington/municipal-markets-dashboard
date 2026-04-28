@@ -1,5 +1,5 @@
 {
-  "generated": "2026-04-27T22:47:40-05:00",
+  "generated": "2026-04-28T00:24:44-05:00",
   "generator": "build_dashboard_data.py v2.27",
   "cities": [
     {
@@ -20,14 +20,14 @@
       "slug": "fortworth",
       "name": "Fort Worth",
       "path": "fortworth.json",
-      "contract_count": 507,
-      "total_value_usd": 423649482.29,
+      "contract_count": 485,
+      "total_value_usd": 376112097.87,
       "date_range": {
         "min": "2023-01-10",
         "max": "2026-03-31"
       },
-      "last_modified": "2026-04-27T22:47:36-05:00",
-      "size_bytes": 294481,
+      "last_modified": "2026-04-28T00:24:22-05:00",
+      "size_bytes": 280033,
       "status": "ok"
     },
     {
@@ -146,14 +146,14 @@
       "slug": "grandprairie",
       "name": "Grand Prairie",
       "path": "grandprairie.json",
-      "contract_count": 24,
-      "total_value_usd": 10793033.11,
+      "contract_count": 40,
+      "total_value_usd": 17590848.13,
       "date_range": {
         "min": "2023-01-03",
         "max": "2026-03-26"
       },
-      "last_modified": "2026-04-27T22:42:42-05:00",
-      "size_bytes": 13551,
+      "last_modified": "2026-04-28T00:23:35-05:00",
+      "size_bytes": 22415,
       "status": "ok"
     },
     {
