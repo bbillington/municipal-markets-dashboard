@@ -23,7 +23,7 @@
      nav badge and footer text. Cache-bust query string is bumped on every
      release so a new APP_VERSION is picked up immediately even if the
      browser cached version.js from a prior visit. -->
-<script src="version.js?v=2.44"></script>
+<script src="version.js?v=2.45"></script>
 <!-- PDF export libraries -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
@@ -6641,13 +6641,14 @@ function getCityStyle(cityName) {
   const selectedCity = STATE.filters.cities.size === 1 ? [...STATE.filters.cities][0] : null;
   const isSelected = selectedCity && selectedCity === cityName;
 
-  // Compute density fill (same logic whether selected or not).
-  // Intentional design choice (revised 2026-04-21): boundaries use the
-  // SAME teal ramp for both Value and Contracts so the user can compare
-  // the two views and read the relative intensity shift per city without
-  // a color-palette confound. Circles mode keeps its own per-metric
-  // color (teal vs blue) because the circle-size channel already carries
-  // the metric — there the palette adds a redundant affordance.
+  // Compute density fill — QUANTILE bins instead of absolute scale.
+  // Brent flagged that with Fort Worth at $345M and Dallas at $178M, the
+  // sqrt-of-ratio scale we used previously compressed every other city
+  // into the lower ~26% of the color range and they all looked nearly
+  // identical. Quantile binning splits the 10 active cities into 5 even
+  // buckets (2 cities each), so mid-range cities get clearly distinct
+  // colors. The legend uses the same bin scheme, so swatches and map
+  // fills agree.
   let fillColor = '#e0e0e0';
   if (rowVal > 0) {
     const cityTotals = {};
@@ -6659,9 +6660,18 @@ function getCityStyle(cityName) {
         cityTotals[r.city] = (cityTotals[r.city] || 0) + (r.amount || 0);
       }
     }
-    const maxVal = Math.max(...Object.values(cityTotals), 1);
-    const t = Math.sqrt(rowVal / maxVal);
-    fillColor = lerpColor('#E0F0F1', '#115E6B', Math.min(t, 1));
+    // Sort positive values ascending; find which 1/5 bucket rowVal falls
+    // in by rank. Identical-value ties land in the same bucket.
+    const sorted = Object.values(cityTotals).filter(v => v > 0).sort((a, b) => a - b);
+    const steps = 5;
+    let bin = 0;
+    for (let s = 1; s <= steps; s++) {
+      const breakVal = sorted[Math.min(Math.floor(s * sorted.length / steps), sorted.length - 1)];
+      if (rowVal <= breakVal) { bin = s - 1; break; }
+      bin = s - 1;
+    }
+    const t = (bin + 0.5) / steps;  // 0.1, 0.3, 0.5, 0.7, 0.9
+    fillColor = lerpColor('#E0F0F1', '#115E6B', t);
   }
 
   // In circles mode, boundaries fade so circles pop
