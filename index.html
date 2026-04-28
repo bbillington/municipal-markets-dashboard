@@ -23,7 +23,7 @@
      nav badge and footer text. Cache-bust query string is bumped on every
      release so a new APP_VERSION is picked up immediately even if the
      browser cached version.js from a prior visit. -->
-<script src="version.js?v=2.53"></script>
+<script src="version.js?v=2.54"></script>
 <!-- PDF export libraries -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
@@ -2574,10 +2574,11 @@ body.map-expanded .chart-section-header {
       </div>
 
       <!-- Chart 1: Consultant Bar (left, row 1).
-           min-height fits all 10 firm labels on the y-axis. Without
-           this, Chart.js auto-skips every other tick label when the
-           canvas is shorter than ~30px-per-bar (Brent: only 5 firms
-           showed). -->
+           NO min-height bump — left column (this + donut below) must
+           equal the right-column "Over Time" tall chart so all three
+           Market Overview charts fit on one screen. The all-labels-
+           visible fix is autoSkip: false on the y-axis (see
+           renderConsultantBar), not a taller canvas. -->
       <div class="chart-card">
         <div class="chart-header">
           <div>
@@ -2585,7 +2586,7 @@ body.map-expanded .chart-section-header {
             <div class="chart-subtitle">Ranked by total dollar value &middot; click bar to filter</div>
           </div>
         </div>
-        <div class="chart-wrap" style="min-height: 340px;"><canvas id="chartConsultantBar"></canvas></div>
+        <div class="chart-wrap"><canvas id="chartConsultantBar"></canvas></div>
       </div>
 
       <!-- Chart 3: Over Time (right, spans 2 rows — double tall) -->
@@ -5334,6 +5335,15 @@ function renderConsultantBar() {
         // and Associates, Inc.") don't get clipped at the canvas edge.
         afterFit: function(scaleInstance) {
           if (scaleInstance.width < 220) scaleInstance.width = 220;
+        },
+        // Force every firm name to render even when the canvas is short
+        // (default autoSkip drops every other label, hiding 4-5 firms).
+        // This chart's height is constrained so the 2x2 Market Overview
+        // grid fits on one screen.
+        ticks: {
+          ...CHART_DEFAULTS.scales.y.ticks,
+          autoSkip: false,
+          font: { family: "'Public Sans', sans-serif", size: 10 },
         },
       },
     },
